@@ -7,6 +7,8 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.signal
+from skimage import filters as skflt
+from skimage import feature as skf
 import glob
 import os
 
@@ -50,8 +52,9 @@ if __name__ == '__main__':
         #
         timgCrop = timg[int(tsiz[0]*pbnd):-int(tsiz[0]*pbnd), int(tsiz[1]*pbnd):-int(tsiz[1]*pbnd)].copy().astype(np.float32)
         timgCrop /= 255.
-        timgCrop = getImgGrad(timgCrop)
+        # timgCrop = getImgGrad(timgCrop)
         tcorrFFT, tcorrMap = matchFullyCorr(timgCrop)
+        peaksPTS = skf.peak_local_max(tcorrMap, min_distance=5)
         sumFX = np.sum(tcorrFFT, axis=1)
         sumFY = np.sum(tcorrFFT, axis=0)
         # (1) search peaks in freq-domain
@@ -93,26 +96,26 @@ if __name__ == '__main__':
         pxy0 = [int(timgCrop.shape[1] * 0.1), int(timgCrop.shape[0] * 0.1)]
         #
         plt.figure()
-        plt.subplot(2, 3, 1)
+        plt.subplot(3, 3, 1)
         plt.imshow(timgCrop, cmap=plt.gray()), plt.title('Original')
-        plt.subplot(2, 3, 2)
+        plt.subplot(3, 3, 2)
         plt.imshow(np.log(tcorrFFT), cmap=plt.gray()), plt.title('CorrFFT')
-        plt.subplot(2, 3, 3)
+        plt.subplot(3, 3, 3)
         plt.hold(True)
         plt.plot(sumFX)
         plt.plot(pkxIdx, pkxX, 'o')
         plt.title('Freqs: lo-bnd ~%s, hi-bnd ~%s' % (freqLoBnd, freqHiBnd))
         plt.grid(True)
         plt.hold(False)
-        plt.subplot(2, 3, 4)
+        plt.subplot(3, 3, 4)
         plt.hold(True)
         plt.plot(sumFY)
         plt.plot(pkyIdx, pkyY, 'o')
         plt.hold(False)
         plt.grid(True)
-        plt.subplot(2, 3, 5)
+        plt.subplot(3, 3, 5)
         plt.imshow(tcorrMap), plt.title('CorrMap')
-        plt.subplot(2, 3, 6)
+        plt.subplot(3, 3, 6)
         if timgCrop.ndim<3:
             tmpImage = cv2.cvtColor(255.*timgCrop, cv2.COLOR_GRAY2BGR).astype(np.uint8)
         else:
@@ -121,4 +124,10 @@ if __name__ == '__main__':
         cv2.rectangle(tmpImage, (pxy0[0], pxy0[1]), (pxy0[0] + int(4*dx), pxy0[1] + int(4*dy)), (255,0,0), 2)
         plt.imshow(tmpImage)
         plt.title('DX=%s, DY=%s, Size=%s' % (dx, dy, tmpImage.shape[:2]))
+        #
+        plt.subplot(3, 3, 7)
+        plt.hold(True)
+        plt.imshow(tcorrMap)
+        plt.plot(peaksPTS[:,1], peaksPTS[:,0], 'o')
+        plt.hold(False)
         plt.show()
