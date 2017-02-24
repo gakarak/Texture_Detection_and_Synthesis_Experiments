@@ -1,0 +1,2 @@
+# Texture_Detection_and_Synthesis_Experiments
+Experimenta code for texture detection and synthesis
