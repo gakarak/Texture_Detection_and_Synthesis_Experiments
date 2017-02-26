@@ -46,7 +46,7 @@ if __name__ == '__main__':
             align_grid.drawGrid(v_x, v_y, is_good)
             plt.show()
 
-        rect_is_good = align_grid.extractMaximalRect(is_good)
+        rect_is_good = is_good
 
         if (args.draw):
             plt.figure('Masks difference')
