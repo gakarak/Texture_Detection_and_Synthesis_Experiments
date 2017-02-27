@@ -82,6 +82,68 @@ def MinimizePatternByTemplMatchV3(pattern, brdSize=5, isDebug=False, parMethod =
     posLB = (posMaxV[0] - 1*ptrnSize, posMaxV[1])
     return (tretCrop, posRT, posLB)
 
+def getBestTexton(timg, vx, vy, isGood, sizN=1, parMethod = cv2.TM_SQDIFF):
+    good_idx = np.transpose(np.where(is_good))
+
+    bestTexton = None
+    maxCorr = -10005000000
+    posRT = (0, 0)
+    posLB = (0, 0)
+
+    bestBBox = None
+
+    for i, j in good_idx:
+        if (i + sizN >= isGood.shape[0] or j + sizN >= isGood.shape[1]
+            or not isGood[i+sizN, j + sizN]):
+            continue
+
+        bbox = getTexton(vx, vy, isGood, i, j, sizN)
+
+        bbW = np.abs(bbox[0][0] - bbox[0][1])
+        bbH = np.abs(bbox[1][0] - bbox[1][1])
+        parBorder = int(min(bbH,bbW) * 0.15)
+        # parBorder = 5
+        print ('Border parameter: %s' % parBorder)
+        #
+        arrXY = getGoodGridPoints(v_x, v_y, isGoodMsk)
+        imgTexton = cropTexton(timg, bbox, brdPx=parBorder, brdPrcnt=None)
+
+        ptrnSize = parBorder+2
+        brdSizeExt = int(1.7*parBorder)
+        ptrnLef = imgTexton[ptrnSize:-ptrnSize, :ptrnSize]
+        ptrnTop = imgTexton[:ptrnSize, ptrnSize:-ptrnSize]
+        ccMapH = cv2.matchTemplate(imgTexton, ptrnLef, method=parMethod)
+        ccMapV = cv2.matchTemplate(imgTexton, ptrnTop, method=parMethod)
+        if parMethod==cv2.TM_SQDIFF or parMethod==cv2.TM_SQDIFF_NORMED:
+            ccMapH = 1. - ccMapH
+            ccMapV = 1. - ccMapV
+        minH = ccMapH.min()
+        minV = ccMapV.min()
+        ccMapHflt = ccMapH.copy()
+        ccMapVflt = ccMapV.copy()
+        ccMapHflt[:, :-brdSizeExt] = minH
+        ccMapVflt[:-brdSizeExt, :] = minV
+        # pMaxH = np.argmax(ccMapHflt)
+        # pMaxV = np.argmax(ccMapVflt)
+        _, maxVH, _, posMaxH = cv2.minMaxLoc(ccMapHflt)
+        _, maxVV, _, posMaxV = cv2.minMaxLoc(ccMapVflt)
+
+        #print(maxVH + maxVV)
+        if (maxCorr < maxVH + maxVV):
+            #print('#############################################################')
+            bestBBox = bbox
+            shiftH_X, shiftH_Y = posMaxH
+            shiftV_X, shiftV_Y = posMaxV
+            posRT = (posMaxH[0], posMaxH[1] - 1*ptrnSize)
+            posLB = (posMaxV[0] - 1*ptrnSize, posMaxV[1])
+            maxCorr = maxVH + maxVV
+            bestTexton = imgTexton[:shiftV_Y, :shiftH_X]
+
+
+    #print(posRT, posLB)
+    #return (bestTexton, posRT, posLB)
+    return bestBBox
+
 def generateTiledTextonV1(texton, dRightY, dBottomX, nr=5, nc=5):
     tsiz = texton.shape[:2]
     sizR, sizC = tsiz
@@ -257,7 +319,8 @@ if __name__ == '__main__':
         #FIxME: remove buttons
         # is_good[:, is_good.shape[1] / 2] = False
         isGoodMsk = maskErosion(is_good, percent_of_src = 0.6, min_square = 10)
-        retBBox = getRandomTexton(v_x, v_y, isGoodMsk, sizN=paramSizTexton)
+        retBBox = getBestTexton(timg, v_x, v_y, isGoodMsk, sizN=1)
+        # retBBox = getRandomTexton(v_x, v_y, isGoodMsk, sizN=paramSizTexton)
         print (retBBox)
         bbW = np.abs(retBBox[0][0] - retBBox[0][1])
         bbH = np.abs(retBBox[1][0] - retBBox[1][1])
