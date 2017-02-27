@@ -232,7 +232,7 @@ def cropTexton(timg, texBBox, brdPrcnt=0.1, brdPx=None):
 
 ##########################################
 if __name__ == '__main__':
-    fidx = '/home/ar/github.com/Texture_Detection_and_Synthesis_Experiments.git/data/data04_for_test1_results_v1/txt01_pxy_S/cropped_and_results/idx.txt'
+    fidx = '../../data/data04_for_test1_results_v1/txt01_pxy_S/cropped_and_results/idx.txt'
     # fidx = '/home/ar/github.com/Texture_Detection_and_Synthesis_Experiments.git/data/data04_for_test1_results_v1/txt02_pxy_M/cropped_and_results/idx.txt'
     wdir = os.path.dirname(fidx)
     with open(fidx, 'r') as f:
