@@ -154,36 +154,30 @@ def ReadGraph(pdir, shirt_num):
     return [v_x, v_y, is_good]
 
 ##########################################
-def getRandomTexton(vx, vy, isGood, sizN=1, numErosionMax=2):
-    tmpIsGood = isGood.copy()
-    cntErosion = 0
-    for ii in range(numErosionMax):
-        tmp = binary_erosion(tmpIsGood)
-        if np.sum(tmp) > 0:
-            tmpIsGood = tmp
-            cntErosion += 1
-        else:
-            break
-    rndR, rndC = np.where(tmpIsGood)
-    idxRnd = np.random.randint(len(rndR))
-    rndRC = (rndR[idxRnd], rndC[idxRnd])
-    # rndRC = (16, 14)
-    print(rndRC)
-    # plt.subplot(1, 2, 1), plt.imshow(is_good)
-    # plt.subplot(1, 2, 2), plt.imshow(tmpIsGood)
-    # plt.title('pos = %s, #Erosion=%d' % (list(rndRC), cntErosion))
-    print ('pos = %s, #Erosion=%d' % (list(rndRC), cntErosion))
+def maskErosion(is_good, percent_of_src = 0.4, min_square = 10):
+    """
+        percent_of_src - result square is about percent_of_src of source square
+    """
+    blob_is_good = is_good.copy()
+    
+    min_square = max(percent_of_src*np.sum(is_good), min_square)
+    while np.sum(blob_is_good) > min_square:
+        blob_is_good = binary_erosion(blob_is_good)
+
+    return blob_is_good
+
+def getTexton(vx, vy, isGood, row, col, sizN=1):
     X = []
     Y = []
-    X += [vx[(rndRC[0] + 0   , rndRC[1] + 0)]]
-    X += [vx[(rndRC[0] + sizN, rndRC[1] + 0)]]
-    X += [vx[(rndRC[0] + 0   , rndRC[1] + sizN)]]
-    X += [vx[(rndRC[0] + sizN, rndRC[1] + sizN)]]
+    X += [vx[(row + 0   , col + 0)]]
+    X += [vx[(row + sizN, col + 0)]]
+    X += [vx[(row + 0   , col + sizN)]]
+    X += [vx[(row + sizN, col + sizN)]]
     print(X)
-    Y += [vy[(rndRC[0] + 0   , rndRC[1] + 0)]]
-    Y += [vy[(rndRC[0] + sizN, rndRC[1] + 0)]]
-    Y += [vy[(rndRC[0] + 0   , rndRC[1] + sizN)]]
-    Y += [vy[(rndRC[0] + sizN, rndRC[1] + sizN)]]
+    Y += [vy[(row + 0   , col + 0)]]
+    Y += [vy[(row + sizN, col + 0)]]
+    Y += [vy[(row + 0   , col + sizN)]]
+    Y += [vy[(row + sizN, col + sizN)]]
     print(Y)
     min_x = min(X)
     max_x = max(X)
@@ -192,7 +186,17 @@ def getRandomTexton(vx, vy, isGood, sizN=1, numErosionMax=2):
     # bbox = np.array([[min_y, min_x], [max_y, max_x]])
     bbox = np.array([[min_x, max_x], [min_y, max_y]])
     bbox = np.round(bbox)
-    return (bbox, tmpIsGood)
+    
+    return bbox
+
+
+def getRandomTexton(vx, vy, isGood, sizN=1):
+    rows, cols = np.where(isGood)
+    idxRnd = np.random.randint(len(rows))
+
+    print ('pos = (%d, %d)' % (rows[idxRnd], cols[idxRnd]))
+
+    return getTexton(vx, vy, isGood, rows[idxRnd], cols[idxRnd], sizN)
 
 ##########################################
 def getGoodGridPoints(vx,vy, isGood):
@@ -252,7 +256,8 @@ if __name__ == '__main__':
         # arrXY = getGoodGridPoints(v_x, v_y, is_good)
         #FIxME: remove buttons
         # is_good[:, is_good.shape[1] / 2] = False
-        retBBox, isGoodMsk = getRandomTexton(v_x, v_y, is_good, sizN=paramSizTexton, numErosionMax=2)
+        isGoodMsk = maskErosion(is_good, percent_of_src = 0.6, min_square = 10)
+        retBBox = getRandomTexton(v_x, v_y, isGoodMsk, sizN=paramSizTexton)
         print (retBBox)
         bbW = np.abs(retBBox[0][0] - retBBox[0][1])
         bbH = np.abs(retBBox[1][0] - retBBox[1][1])
