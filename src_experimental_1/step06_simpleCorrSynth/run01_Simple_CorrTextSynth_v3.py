@@ -90,11 +90,11 @@ def MinimizePatternByTemplMatchV3(pattern, brdSize=5, isDebug=False, parMethod =
     shiftV_X, shiftV_Y = posMaxV
     tretCrop = pattern[:shiftV_Y, :shiftH_X]
     #
-    plt.subplot(2, 2, 1), plt.imshow(ccMapH)
-    plt.subplot(2, 2, 2), plt.imshow(ccMapHflt)
-    plt.subplot(2, 2, 3), plt.imshow(ccMapV)
-    plt.subplot(2, 2, 4), plt.imshow(ccMapVflt)
-    plt.show()
+    # plt.subplot(2, 2, 1), plt.imshow(ccMapH)
+    # plt.subplot(2, 2, 2), plt.imshow(ccMapHflt)
+    # plt.subplot(2, 2, 3), plt.imshow(ccMapV)
+    # plt.subplot(2, 2, 4), plt.imshow(ccMapVflt)
+    # plt.show()
     if isDebug:
         plt.figure()
         plt.subplot(1, 2, 1)
@@ -113,8 +113,10 @@ def MinimizePatternByTemplMatchV3(pattern, brdSize=5, isDebug=False, parMethod =
         plt.show()
     dRightY  = shiftH_Y - 0*ptrnSize
     dBottomX = shiftV_X - 0*ptrnSize
-    posRT = (posMaxH[0], pattern.shape[0] - posMaxH[1])
-    posLB = (pattern.shape[1] - posMaxV[0], posMaxV[1])
+    # posRT = (posMaxH[0], pattern.shape[0] - posMaxH[1])
+    # posLB = (pattern.shape[1] - posMaxV[0], posMaxV[1])
+    posRT = (posMaxH[0], posMaxH[1] - 1*ptrnSize)
+    posLB = (posMaxV[0] - 1*ptrnSize, posMaxV[1])
     return (tretCrop, posRT, posLB)
 
 def generateTiledTextonV1(texton, dRightY, dBottomX, nr=5, nc=5):
@@ -146,8 +148,10 @@ def generateTiledTextonV2(textonBRD, posXY_RT, posXY_LB, nr=5, nc=5):
     sizR, sizC = tsiz
     dRR = np.abs(posXY_LB[1] * 1)
     dCC = np.abs(posXY_RT[0] * 1)
-    sizRT = dRR * (nr + 3) + 0
-    sizCT = dCC * (nc + 3) + 0
+    sizRT = dRR * (nr + 2) + 0
+    sizCT = dCC * (nc + 2) + 0
+    vRT = np.array((posRT[1],posRT[0]))
+    vLB = np.array((posLB[1],posLB[0]))
     if textonBRD.ndim<3:
         retTexture = np.zeros((sizRT, sizCT), dtype=textonBRD.dtype)
     else:
@@ -155,12 +159,14 @@ def generateTiledTextonV2(textonBRD, posXY_RT, posXY_LB, nr=5, nc=5):
         retTexture = np.zeros((sizRT, sizCT, nch), dtype=textonBRD.dtype)
     r0 = 0*dRR + tsiz[0] / 2
     c0 = 0*dCC + tsiz[1] / 2
+    r00 = np.array((r0,c0))
     for rri in range(nr):
-        rr = r0 + rri * posXY_LB[1]
+        # rr = r0 + rri * posXY_LB[1]
         for cci in range(nc):
-            cc = c0 + cci * posXY_RT[0]
+            # cc = c0 + cci * posXY_RT[0] + rri*(posLB[1])
+            rr,cc = (r00 + rri*vLB + cci*vRT).tolist()
             if textonBRD.ndim>2:
-                retTexture[rr:rr+sizR, cc:cc+sizC,:] = textonBRD.copy()
+                retTexture[rr:rr + sizR, cc:cc + sizC, :] = textonBRD.copy()
             else:
                 retTexture[rr:rr + sizR, cc:cc + sizC, :] = textonBRD.copy()
     return retTexture
