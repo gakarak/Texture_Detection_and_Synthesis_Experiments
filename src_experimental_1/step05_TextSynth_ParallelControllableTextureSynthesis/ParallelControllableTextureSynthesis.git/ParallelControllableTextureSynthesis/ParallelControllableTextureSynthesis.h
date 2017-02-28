@@ -55,13 +55,13 @@ private:
     void coordinateTrim (cv::Point& coor);
     
     // Construct similar set of given input sample texture
-    void similarSetConstruction ();
+    //void similarSetConstruction ();
     
     cv::Mat sample_texture;
-    cv::Mat synthesized_texture;
+    //cv::Mat synthesized_texture;
     std::vector<dynamicArray2D<cv::Point> > syn_coor;
     std::vector<cv::Mat> syn_texture;
-    dynamicArray2D<std::vector<cv::Point> > sample_similar_set;
+    //dynamicArray2D<std::vector<cv::Point> > sample_similar_set;
     
     std::string sample_texture_path;
     

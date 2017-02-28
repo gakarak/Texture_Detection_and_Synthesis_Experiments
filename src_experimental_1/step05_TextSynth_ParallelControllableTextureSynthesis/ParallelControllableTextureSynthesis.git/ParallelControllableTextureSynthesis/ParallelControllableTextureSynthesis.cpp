@@ -14,7 +14,7 @@ using namespace cv;
 
 ParallelControllableTextureSynthesis::ParallelControllableTextureSynthesis () {
     
-    srand((int)time(NULL));
+    srand(1234);
     
 }
 
@@ -28,7 +28,7 @@ Mat ParallelControllableTextureSynthesis::synthesis(const string &texture_file, 
     sample_texture = imread(texture_file.c_str());
     sample_texture_path = texture_file;
     
-    similarSetConstruction();
+    //similarSetConstruction();
 
     initialization(magnify_ratio);
 
@@ -48,14 +48,14 @@ Mat ParallelControllableTextureSynthesis::synthesis(const string &texture_file, 
         coordinateMapping(i);
         std::stringstream ss;
         ss << "" << i << "_LEVEL";
-        if (i>4) {
+        if (i>2) {
             showMat(syn_texture[i], ss.str());
         }
 //        std::cout << ""
     }
 //    showMat(synthesized_texture);
 
-    return synthesized_texture;
+    return Mat();//synthesized_texture;
 }
 
 
@@ -86,7 +86,7 @@ void ParallelControllableTextureSynthesis::initialization(double magnify_ratio) 
     int tmpLevel = 0;
     for (int i = 0; i < syn_coor[tmpLevel].rows; i++) {
         for (int j = 0; j < syn_coor[tmpLevel].cols; j++) {
-            this->syn_coor[tmpLevel].at(i,j) = cv::Point(j, i);
+            this->syn_coor[tmpLevel].at(i,j) = cv::Point(0, 0);
         }
     }
     
@@ -146,7 +146,8 @@ void ParallelControllableTextureSynthesis::jitter (int level) {
     for (int i = 0; i < syn_coor[level].rows; i++) {
         for (int j = 0; j < syn_coor[level].cols; j++) {
             cv::Point tmpP = this->syn_coor[level].at(i,j);
-            tmpP += cv::Point(ceil((rand()%3 - 1) + 0.5), ceil((rand()%3 - 1) + 0.5))*JITTER_AMPLITUDE;
+            //tmpP += cv::Point(ceil((rand()%3 - 1) + 0.5), ceil((rand()%3 - 1) + 0.5))*JITTER_AMPLITUDE;
+            tmpP += cv::Point(rand()%3, rand()%3)*JITTER_AMPLITUDE;
             coordinateTrim(tmpP);
             this->syn_coor[level].at(i,j) = tmpP;
         }
@@ -201,14 +202,42 @@ void ParallelControllableTextureSynthesis::coordinateMapping(int level) {
     
     
     Mat re_texture = sample_texture.clone();
+    double i_scale = 1;
+    double j_scale = 1;
     if ( syn_coor[level].rows < sample_texture.rows ) {
-        resize(sample_texture, re_texture, syn_texture[level].size());
+        cv::resize(sample_texture, re_texture, syn_texture[level].size());
+
+        //i_scale = syn_texture[level].size().height / double(sample_texture.rows);
+        //j_scale = syn_texture[level].size().width / double(sample_texture.cols);
+        /*cv::imshow("resize", re_texture);
+        cv::waitKey(0);*/
     }
+
+    /*for (int l = 0; l <= PYRAMID_LEVEL; l++){
+      auto &pyr_lev = syn_coor[l];
+      for (int i = 0; i < pyr_lev.rows; i++)
+        for (int j = 0; j < pyr_lev.cols; j++){
+          Point &pt = pyr_lev.at(i, j);
+          if (pt.x < 0 || pt.x >= re_texture.cols ||
+              pt.y < 0 || pt.y >= re_texture.rows){
+            std::cerr << "ERRORO" << std::endl;
+          }
+        }
+    }*/
     
     for (int i = 0; i < syn_texture[level].rows; i ++) {
         for (int j = 0; j < syn_texture[level].cols; j ++) {
             
-            syn_texture[level].at<Vec3b>(i, j) = re_texture.at<Vec3b>(syn_coor[level].at(i, j));
+            Point &pt = syn_coor[level].at(i, j);
+            pt.x *= i_scale;
+            pt.y *= j_scale;
+
+            if (pt.x < 0 || pt.x >= re_texture.rows ||
+                pt.y < 0 || pt.y >= re_texture.cols){
+              syn_texture[level].at<Vec3b>(i, j) = Vec3b(255, 0, 0);
+              cerr << "Error: " << pt << " i_scale: " << i_scale << endl;
+            }
+            syn_texture[level].at<Vec3b>(i, j) = re_texture.at<Vec3b>(pt);
             
         }
     }
@@ -219,12 +248,17 @@ void ParallelControllableTextureSynthesis::coordinateMapping(int level) {
 void ParallelControllableTextureSynthesis::coordinateTrim(Point &coor) {
     
     coor = Point(coor.x % sample_texture.rows, coor.y % sample_texture.cols);
-    
+    /*if (coor.x < 0){
+      coor.x = sample_texture.rows + coor.x;
+    }
+    if (coor.y < 0){
+      coor.y = sample_texture.cols + coor.y;
+    }*/
 }
 
 
 
-void ParallelControllableTextureSynthesis::similarSetConstruction() {
+/*void ParallelControllableTextureSynthesis::similarSetConstruction() {
     
     sample_similar_set = dynamicArray2D<vector<Point> > (sample_texture.rows, sample_texture.cols);
     
@@ -358,7 +392,7 @@ void ParallelControllableTextureSynthesis::similarSetConstruction() {
     
 }
 
-
+*/
 
 
 

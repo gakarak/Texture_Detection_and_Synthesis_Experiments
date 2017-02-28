@@ -3,10 +3,19 @@
 #include <iostream>
 #include <sstream>
 
+#include <opencv2/imgproc.hpp>
+
 void showMat(const cv::Mat &pimg, std::string winName, bool isBlockInput) {
     std::vector<cv::Mat> lstChannels;
 
-    cv::Mat tmp = pimg;
+    cv::Mat tmp;
+
+    if (pimg.rows < 100 || pimg.cols < 100){
+      cv::resize(pimg, tmp, cv::Size(512, 512), 0, 0, cv::INTER_NEAREST);
+    }
+    else{
+      tmp = pimg;
+    }
 //    cv::normalize(pimg, tmp, 0, 255, CV_MINMAX, CV_8U);
     cv::imshow(winName, tmp);
 
