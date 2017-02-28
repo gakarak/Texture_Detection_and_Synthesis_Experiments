@@ -5,7 +5,7 @@ __author__ = 'ar'
 import os
 import glob
 
-import skimage.io as skio
+#import skimage.io as skio
 
 import cv2
 import numpy as np
@@ -83,8 +83,6 @@ def MinimizePatternByTemplMatchV3(pattern, brdSize=5, isDebug=False, parMethod =
     return (tretCrop, posRT, posLB)
 
 def getBestTexton(timg, vx, vy, isGood, sizN=1, parMethod = cv2.TM_SQDIFF):
-    good_idx = np.transpose(np.where(is_good))
-
     bestTexton = None
     maxCorr = -10005000000
     posRT = (0, 0)
@@ -92,26 +90,30 @@ def getBestTexton(timg, vx, vy, isGood, sizN=1, parMethod = cv2.TM_SQDIFF):
 
     bestBBox = None
 
+    good_idx = np.transpose(np.where(is_good))
     for i, j in good_idx:
         if (i + sizN >= isGood.shape[0] or j + sizN >= isGood.shape[1]
-            or not isGood[i+sizN, j + sizN]):
+            or not isGood[i+sizN, j+sizN]):
             continue
 
         bbox = getTexton(vx, vy, isGood, i, j, sizN)
+        bbox = bbox * 1500 / 480
 
         bbW = np.abs(bbox[0][0] - bbox[0][1])
         bbH = np.abs(bbox[1][0] - bbox[1][1])
         parBorder = int(min(bbH,bbW) * 0.15)
         # parBorder = 5
+        print(bbox)
         print ('Border parameter: %s' % parBorder)
         #
-        arrXY = getGoodGridPoints(v_x, v_y, isGoodMsk)
         imgTexton = cropTexton(timg, bbox, brdPx=parBorder, brdPrcnt=None)
 
         ptrnSize = parBorder+2
         brdSizeExt = int(1.7*parBorder)
         ptrnLef = imgTexton[ptrnSize:-ptrnSize, :ptrnSize]
         ptrnTop = imgTexton[:ptrnSize, ptrnSize:-ptrnSize]
+        print(imgTexton.shape)
+        print(ptrnLef.shape)
         ccMapH = cv2.matchTemplate(imgTexton, ptrnLef, method=parMethod)
         ccMapV = cv2.matchTemplate(imgTexton, ptrnTop, method=parMethod)
         if parMethod==cv2.TM_SQDIFF or parMethod==cv2.TM_SQDIFF_NORMED:
@@ -293,12 +295,13 @@ def cropTexton(timg, texBBox, brdPrcnt=0.1, brdPx=None):
     if timg.ndim<3:
         tret = timg[ymin - dr:ymax + dr, xmin - dc:xmax + dc].copy()
     else:
-        tret = timg[ymin - dr:ymax + dr, xmin - dc:xmax + dc, :].copy()
+        tret = timg[max(ymin - dr, 0):min(ymax + dr, timg.shape[0]), 
+                    max(xmin - dc, 0):min(xmax + dc, timg.shape[1]), :].copy()
     return tret
 
 ##########################################
 if __name__ == '__main__':
-    fidx = '../../data/data04_for_test1_results_v1/txt01_pxy_S/cropped_and_results/idx.txt'
+    fidx = '../../data/data04_for_test1_results_v1/txt02_pxy_M/cropped_and_results/idx.txt'
     # fidx = '/home/ar/github.com/Texture_Detection_and_Synthesis_Experiments.git/data/data04_for_test1_results_v1/txt02_pxy_M/cropped_and_results/idx.txt'
     wdir = os.path.dirname(fidx)
     with open(fidx, 'r') as f:
@@ -313,13 +316,15 @@ if __name__ == '__main__':
         #     continue
         print ('[%d/%d] : %s' % (ii, numImg, pathImg))
         tidx = lstIdx[ii]
-        timg = skio.imread(pathImg)
+        timg = np.array(cv2.imread(pathImg))
+        big_img = np.array(cv2.imread(os.path.join(wdir, '%s_big.jpg' % tidx)))
+
         [v_x, v_y, is_good] = ReadGraph(wdir, tidx)
         # arrXY = getGoodGridPoints(v_x, v_y, is_good)
         #FIxME: remove buttons
         # is_good[:, is_good.shape[1] / 2] = False
         isGoodMsk = maskErosion(is_good, percent_of_src = 0.6, min_square = 10)
-        retBBox = getBestTexton(timg, v_x, v_y, isGoodMsk, sizN=1)
+        retBBox = getBestTexton(big_img, v_x, v_y, isGoodMsk, sizN=paramSizTexton)
         # retBBox = getRandomTexton(v_x, v_y, isGoodMsk, sizN=paramSizTexton)
         print (retBBox)
         bbW = np.abs(retBBox[0][0] - retBBox[0][1])
@@ -329,7 +334,7 @@ if __name__ == '__main__':
         print ('Border parameter: %s' % parBorder)
         #
         arrXY = getGoodGridPoints(v_x, v_y, isGoodMsk)
-        imgTexton = cropTexton(timg, retBBox, brdPx=parBorder, brdPrcnt=None)
+        imgTexton = cropTexton(big_img, retBBox, brdPx=parBorder, brdPrcnt=None)
 
         # imgTextonCorr = MinimizePatternByTemplMatchV1(imgTexton)
         # imgTextonCorr = MinimizePatternByTemplMatchV2(imgTexton, brdSize=parBorder)
@@ -346,8 +351,11 @@ if __name__ == '__main__':
         plt.hold(True)
         plt.imshow(timg)
         plt.plot(arrXY[:,0], arrXY[:,1], 'or')
-        tp1 = patches.Rectangle((retBBox[0][0], retBBox[1][0]), bbW, bbH,     fill=False, linewidth=3, edgecolor='g')
-        tp2 = patches.Rectangle((retBBox[0][0], retBBox[1][0]), 2*bbW, 2*bbH, fill=False, linewidth=2, edgecolor='g')
+        small_bbox = retBBox * 480 / 1500
+        sbbW = np.abs(small_bbox[0][0] - small_bbox[0][1])
+        sbbH = np.abs(small_bbox[1][0] - small_bbox[1][1])
+        tp1 = patches.Rectangle((small_bbox[0][0], small_bbox[1][0]), sbbW, sbbH,     fill=False, linewidth=3, edgecolor='g')
+        tp2 = patches.Rectangle((small_bbox[0][0], small_bbox[1][0]), 2*sbbW, 2*sbbH, fill=False, linewidth=2, edgecolor='g')
         tmpH.add_patch(tp1)
         tmpH.add_patch(tp2)
         plt.hold(False)
