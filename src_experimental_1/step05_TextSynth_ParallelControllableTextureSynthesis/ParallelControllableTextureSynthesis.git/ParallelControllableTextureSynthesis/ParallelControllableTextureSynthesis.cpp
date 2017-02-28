@@ -9,6 +9,8 @@
 #include "ParallelControllableTextureSynthesis.h"
 #include <sstream>
 
+using namespace std;
+using namespace cv;
 
 ParallelControllableTextureSynthesis::ParallelControllableTextureSynthesis () {
     

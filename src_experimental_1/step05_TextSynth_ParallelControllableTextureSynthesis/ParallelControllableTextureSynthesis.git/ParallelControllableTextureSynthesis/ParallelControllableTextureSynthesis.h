@@ -18,9 +18,6 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
-using namespace std;
-using namespace cv;
-
 class ParallelControllableTextureSynthesis {
     
 public:
@@ -32,7 +29,7 @@ public:
     ~ParallelControllableTextureSynthesis();
     
     // Begin synthesizing
-    cv::Mat synthesis (const string& texture_file, double magnify_ratio);
+    cv::Mat synthesis (const std::string& texture_file, double magnify_ratio);
     
 
     
@@ -55,18 +52,18 @@ private:
     void coordinateMapping (int level);
     
     // Cut off the coordinates outside of texture boundary
-    void coordinateTrim (Point& coor);
+    void coordinateTrim (cv::Point& coor);
     
     // Construct similar set of given input sample texture
     void similarSetConstruction ();
     
-    Mat sample_texture;
-    Mat synthesized_texture;
-    vector<dynamicArray2D<Point> > syn_coor;
-    vector<Mat> syn_texture;
-    dynamicArray2D<vector<Point> > sample_similar_set;
+    cv::Mat sample_texture;
+    cv::Mat synthesized_texture;
+    std::vector<dynamicArray2D<cv::Point> > syn_coor;
+    std::vector<cv::Mat> syn_texture;
+    dynamicArray2D<std::vector<cv::Point> > sample_similar_set;
     
-    string sample_texture_path;
+    std::string sample_texture_path;
     
     static const int    PYRAMID_LEVEL       =   6;
     static const int    OUTSPACE_FACTOR     =   1;
