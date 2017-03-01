@@ -14,7 +14,6 @@ int main(int argc, const char * argv[])
 {
     ParallelControllableTextureSynthesis textsyn;
     
-    
     textsyn.synthesis("../ParallelControllableTextureSynthesis/tx.jpg", 4.0);
 //    textsyn.synthesis("../ParallelControllableTextureSynthesis/style_v1_64x64.jpg", 2.0);
 
