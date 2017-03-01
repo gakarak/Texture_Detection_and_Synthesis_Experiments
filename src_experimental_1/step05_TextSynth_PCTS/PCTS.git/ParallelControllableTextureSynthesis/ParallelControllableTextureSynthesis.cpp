@@ -35,7 +35,8 @@ Mat ParallelControllableTextureSynthesis::synthesis(const string &texture_file, 
     for (int level = 1; level <= PYRAMID_LEVEL; level ++) {
 
         upsample(level);
-        //jitter(level);
+        if (level == 3)
+          jitter(level);
         coordinateMapping(level);
 
         if(level>2) {
@@ -166,20 +167,28 @@ void ParallelControllableTextureSynthesis::jitter (int level) {
 //    });
 
 //TODO: FUCK3-1 check equality of code '::forEach()' and code below...
-    for (int i = 0; i < syn_coords[level].rows; i++) {
-        for (int j = 0; j < syn_coords[level].cols; j++) {
-            cv::Point tmpP = this->syn_coords[level].at(i,j);
-            //tmpP += cv::Point(ceil((rand()%3 - 1) + 0.5), ceil((rand()%3 - 1) + 0.5))*JITTER_AMPLITUDE;
-            tmpP += cv::Point(rand()%3, rand()%3)*JITTER_AMPLITUDE;
-            coordinateTrim(tmpP);
-            this->syn_coords[level].at(i,j) = tmpP;
+    auto &cur_lvl_coords = syn_coords[level];
+    for (int i = 0; i < cur_lvl_coords.rows; i++) {
+        for (int j = 0; j < cur_lvl_coords.cols; j++) {
+            auto &tex_pt = cur_lvl_coords.at(i, j);
+            tex_pt += cv::Point(floor((rand()%3 - 1) + 0.5),
+                                floor((rand()%3 - 1) + 0.5))*JITTER_AMPLITUDE;
+
+            //checking bounds, they should not exceed cur level size
+            tex_pt.x = max(tex_pt.x, 0);
+            tex_pt.x = min(tex_pt.x, cur_lvl_coords.cols - 1);
+            tex_pt.y = max(tex_pt.y, 0);
+            tex_pt.y = min(tex_pt.y, cur_lvl_coords.rows - 1);
+
+            //trim to sample, when cur level size > sample size
+            coordinateTrim(tex_pt);
         }
     }
 }
 
 
 void ParallelControllableTextureSynthesis::correction(int level) {
-    double local_shrink_ratio = (double)syn_textures[level].rows/sample_texture.rows;
+    //double local_shrink_ratio = (double)syn_textures[level].rows/sample_texture.rows;
     //TODO: check Uncommented CODE
     Mat re_texture = sample_texture.clone();
     if ( syn_coords[level].rows < sample_texture.rows ) {
@@ -262,14 +271,8 @@ void ParallelControllableTextureSynthesis::coordinateMapping(int level) {
 
 
 void ParallelControllableTextureSynthesis::coordinateTrim(Point &coor) {
-    // I think there is should be module by current size of level texture
-    coor = Point(coor.x % sample_texture.cols, coor.y % sample_texture.rows);
-    /*if (coor.x < 0){
-      coor.x = sample_texture.rows + coor.x;
-    }
-    if (coor.y < 0){
-      coor.y = sample_texture.cols + coor.y;
-    }*/
+    coor = Point(coor.x % sample_texture.cols,
+                 coor.y % sample_texture.rows);
 }
 
 
