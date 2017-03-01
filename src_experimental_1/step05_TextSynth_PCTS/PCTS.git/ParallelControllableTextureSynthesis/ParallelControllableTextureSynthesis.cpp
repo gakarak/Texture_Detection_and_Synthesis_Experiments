@@ -7,10 +7,16 @@
 //
 
 #include "ParallelControllableTextureSynthesis.h"
+
 #include <sstream>
+#include <chrono>
 
 using namespace std;
 using namespace cv;
+
+using chrono::milliseconds;
+using chrono::duration_cast;
+using chrono::high_resolution_clock;
 
 ParallelControllableTextureSynthesis::ParallelControllableTextureSynthesis () {
     
@@ -33,15 +39,44 @@ Mat ParallelControllableTextureSynthesis::synthesis(const string &texture_file, 
     initialization(magnify_ratio);
 
     for (int level = 1; level <= PYRAMID_LEVEL; level ++) {
-
-        upsample(level);
-        if (level == 3)
+        cout << "Level: " << level << endl;
+        cout << "Size: " << syn_textures[level].size() << endl;
+        {
+          auto start = high_resolution_clock::now();
+          upsample(level);
+          auto finish = high_resolution_clock::now();
+          cout << "Upsample: "
+               << duration_cast<milliseconds>(finish - start).count()
+               << "ms" << endl;
+        }
+        {
+          auto start = high_resolution_clock::now();
           jitter(level);
-        coordinateMapping(level);
+          auto finish = high_resolution_clock::now();
+          cout << "Jitter: "
+               << duration_cast<milliseconds>(finish - start).count()
+               << "ms" << endl;
+        }
+        {
+          auto start = high_resolution_clock::now();
+          coordinateMapping(level);
+          auto finish = high_resolution_clock::now();
+          cout << "Coordinate mapping: "
+               << duration_cast<milliseconds>(finish - start).count()
+               << "ms" << endl;
+        }
 
         if(level>2) {
-            for(int kk=0; kk<3; kk++) {
-                //correction(level);
+            for(int kk=0; kk<2; kk++) {
+                auto start = high_resolution_clock::now();
+
+                correction(level);
+
+                auto finish = high_resolution_clock::now();
+
+                cout << "Correction: "
+                     << duration_cast<milliseconds>(finish - start).count()
+                     << "ms" << endl;
             }
         }
 //        coordinateMapping(level);
@@ -194,35 +229,49 @@ void ParallelControllableTextureSynthesis::correction(int level) {
     if ( syn_coords[level].rows < sample_texture.rows ) {
         resize(sample_texture, re_texture, syn_textures[level].size());
     }
+    auto &cur_lvl_tex = syn_textures[level];
     dynamicArray2D<Point> temp_coor(syn_coords[level].rows, syn_coords[level].cols);
-    for (int i = 0; i < syn_textures[level].rows; i ++) {
-        for (int j = 0; j < syn_textures[level].cols; j ++) {
-            double min_cost = INFINITY;
-            Point min_loc(0);
-            for (int m = -COHERENCE_SEARCH_W; m <= COHERENCE_SEARCH_W; m ++) {
-                for (int n = -COHERENCE_SEARCH_W; n <= COHERENCE_SEARCH_W; n ++) {
-                    double local_cost = 0;
-                    int valid_count = 0;
-                    for (int p = -PATCH_WIDTH; p <= PATCH_WIDTH; p ++) {
-                        for (int q = -PATCH_WIDTH; q <= PATCH_WIDTH; q ++) {
+    for (int i = 0; i < cur_lvl_tex.rows; i ++) {
+        for (int j = 0; j < cur_lvl_tex.cols; j ++) {
+          Point patch_tl( max(j - PATCH_WIDTH, 0),
+                          max(i - PATCH_WIDTH, 0) );
+          Point patch_br( min(j + PATCH_WIDTH, cur_lvl_tex.cols),
+                          min(i + PATCH_WIDTH, cur_lvl_tex.rows) );
+          Mat tex_patch = cur_lvl_tex(Rect(patch_tl, patch_br));
 
-                            if ( (syn_coords[level].at(i, j).y + m + p) >= 0 && (syn_coords[level].at(i, j).y + m + p) < syn_textures[level].rows
-                                && (syn_coords[level].at(i, j).x + n + q) >= 0 && (syn_coords[level].at(i, j).x + n + q) < syn_textures[level].cols
-                                && (i + p) >= 0 && (i + p) < syn_textures[level].rows
-                                && (j + q) >= 0 && (j + q) < syn_textures[level].cols ) {
+          cout << re_texture.size() << "\n" << tex_patch.size() << endl;
 
-                                local_cost += Vec3bDiff(syn_textures[level].at<Vec3b>(i + p, j + q), re_texture.at<Vec3b>(syn_coords[level].at(i, j).y + m + p, syn_coords[level].at(i, j).x + n + q));
-                                valid_count ++;
-                            }
-                        }
-                    }
-                    local_cost /= valid_count;
-                    if ( local_cost < min_cost ) {
-                        min_cost = local_cost;
-                        min_loc = Point(syn_coords[level].at(i, j).x + n, syn_coords[level].at(i, j).y + m);
-                    }
-                }
-            }
+          Mat result;
+          cv::matchTemplate(re_texture, tex_patch, result, cv::TM_SQDIFF);
+
+          Point min_loc;
+          cv::minMaxLoc(result, 0, 0, &min_loc);
+//            double min_cost = INFINITY;
+//            Point min_loc(0);
+//            for (int m = -COHERENCE_SEARCH_W; m <= COHERENCE_SEARCH_W; m ++) {
+//                for (int n = -COHERENCE_SEARCH_W; n <= COHERENCE_SEARCH_W; n ++) {
+//                    double local_cost = 0;
+//                    int valid_count = 0;
+//                    for (int p = -PATCH_WIDTH; p <= PATCH_WIDTH; p ++) {
+//                        for (int q = -PATCH_WIDTH; q <= PATCH_WIDTH; q ++) {
+
+//                            if ( (syn_coords[level].at(i, j).y + m + p) >= 0 && (syn_coords[level].at(i, j).y + m + p) < syn_textures[level].rows
+//                                && (syn_coords[level].at(i, j).x + n + q) >= 0 && (syn_coords[level].at(i, j).x + n + q) < syn_textures[level].cols
+//                                && (i + p) >= 0 && (i + p) < syn_textures[level].rows
+//                                && (j + q) >= 0 && (j + q) < syn_textures[level].cols ) {
+
+//                                local_cost += Vec3bDiff(syn_textures[level].at<Vec3b>(i + p, j + q), re_texture.at<Vec3b>(syn_coords[level].at(i, j).y + m + p, syn_coords[level].at(i, j).x + n + q));
+//                                valid_count ++;
+//                            }
+//                        }
+//                    }
+//                    local_cost /= valid_count;
+//                    if ( local_cost < min_cost ) {
+//                        min_cost = local_cost;
+//                        min_loc = Point(syn_coords[level].at(i, j).x + n, syn_coords[level].at(i, j).y + m);
+//                    }
+//                }
+//            }
             temp_coor.at(i, j) = min_loc;
         }
     }
