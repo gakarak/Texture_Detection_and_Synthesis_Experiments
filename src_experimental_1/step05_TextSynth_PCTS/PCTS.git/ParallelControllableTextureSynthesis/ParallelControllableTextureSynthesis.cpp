@@ -8,6 +8,7 @@
 
 #include "ParallelControllableTextureSynthesis.h"
 
+#include <array>
 #include <sstream>
 #include <chrono>
 
