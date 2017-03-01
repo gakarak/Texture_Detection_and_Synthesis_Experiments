@@ -59,8 +59,8 @@ private:
     
     cv::Mat sample_texture;
     //cv::Mat synthesized_texture;
-    std::vector<dynamicArray2D<cv::Point> > syn_coor;
-    std::vector<cv::Mat> syn_texture;
+    std::vector<dynamicArray2D<cv::Point> > syn_coords;
+    std::vector<cv::Mat> syn_textures;
     //dynamicArray2D<std::vector<cv::Point> > sample_similar_set;
     
     std::string sample_texture_path;

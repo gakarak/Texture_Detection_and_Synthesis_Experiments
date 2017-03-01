@@ -48,7 +48,7 @@ Mat ParallelControllableTextureSynthesis::synthesis(const string &texture_file, 
         std::stringstream ss;
         ss << "" << level << "_LEVEL";
         if (level>2) {
-            showMat(syn_texture[level], ss.str());
+            showMat(syn_textures[level], ss.str());
         }
     }
 //    showMat(synthesized_texture);
@@ -63,16 +63,16 @@ void ParallelControllableTextureSynthesis::initialization(double magnify_ratio) 
     //just creates array of black textures with appropriate sizes 512,256,128...
     cv::buildPyramid(Mat(sample_texture.rows*magnify_ratio,
                          sample_texture.cols*magnify_ratio, CV_8UC3),
-                     syn_texture, PYRAMID_LEVEL);
+                     syn_textures, PYRAMID_LEVEL);
     
-    std::reverse(syn_texture.begin(), syn_texture.end());
+    std::reverse(syn_textures.begin(), syn_textures.end());
     
     //preparing for eache level appropriate arrays with coordinates (S).
-    for_each(syn_texture.begin(), syn_texture.end(), [&](Mat texture){
+    for_each(syn_textures.begin(), syn_textures.end(), [&](Mat texture){
         
         //dynamicArray2D<Point> local_coor (texture.rows, texture.cols);
         //syn_coor.push_back(local_coor);
-        syn_coor.emplace_back(texture.rows, texture.cols); // faster
+        syn_coords.emplace_back(texture.rows, texture.cols); // faster
         //showMat(texture);
         
     });
@@ -87,14 +87,14 @@ void ParallelControllableTextureSynthesis::initialization(double magnify_ratio) 
 
 //TODO: FUCK1-1 check equality of code '::forEach_withCorr()' and code below...
     int zero_level = 0;
-    for (int i = 0; i < syn_coor[zero_level].rows; i++) {
-        for (int j = 0; j < syn_coor[zero_level].cols; j++) {
-            syn_coor[zero_level].at(i,j) = cv::Point(0, 0);
+    for (int i = 0; i < syn_coords[zero_level].rows; i++) {
+        for (int j = 0; j < syn_coords[zero_level].cols; j++) {
+            syn_coords[zero_level].at(i,j) = cv::Point(0, 0);
         }
     }
     
-    for (int i = 0; i < syn_coor.size(); i ++) {
-        cout<<syn_coor[i].rows<<", "<<syn_texture[i].rows<< endl;
+    for (int i = 0; i < syn_coords.size(); i ++) {
+        cout<<syn_coords[i].rows<<", "<<syn_textures[i].rows<< endl;
     }
     
     
@@ -114,12 +114,12 @@ void ParallelControllableTextureSynthesis::upsample(int level) {
 //    }
 
     //TODO: FUCK2-2 - previous version of code modified
-    for (int i = 0; i < syn_coor[level].rows; i ++) {
-        for (int j = 0; j < syn_coor[level].cols; j ++) {
-            cv::Point texture1 = cv::Point(syn_coor[level - 1].at(i/2, j/2));
+    for (int i = 0; i < syn_coords[level].rows; i ++) {
+        for (int j = 0; j < syn_coords[level].cols; j ++) {
+            cv::Point texture1 = cv::Point(syn_coords[level - 1].at(i/2, j/2));
             cv::Point texture2 = texture1*2 + cv::Point(j%2, i%2);
             coordinateTrim(texture2);
-            syn_coor[level].at(i, j) = texture2;
+            syn_coords[level].at(i, j) = texture2;
         }
     }
 
@@ -146,28 +146,28 @@ void ParallelControllableTextureSynthesis::jitter (int level) {
 //    });
 
 //TODO: FUCK3-1 check equality of code '::forEach()' and code below...
-    for (int i = 0; i < syn_coor[level].rows; i++) {
-        for (int j = 0; j < syn_coor[level].cols; j++) {
-            cv::Point tmpP = this->syn_coor[level].at(i,j);
+    for (int i = 0; i < syn_coords[level].rows; i++) {
+        for (int j = 0; j < syn_coords[level].cols; j++) {
+            cv::Point tmpP = this->syn_coords[level].at(i,j);
             //tmpP += cv::Point(ceil((rand()%3 - 1) + 0.5), ceil((rand()%3 - 1) + 0.5))*JITTER_AMPLITUDE;
             tmpP += cv::Point(rand()%3, rand()%3)*JITTER_AMPLITUDE;
             coordinateTrim(tmpP);
-            this->syn_coor[level].at(i,j) = tmpP;
+            this->syn_coords[level].at(i,j) = tmpP;
         }
     }
 }
 
 
 void ParallelControllableTextureSynthesis::correction(int level) {
-    double local_shrink_ratio = (double)syn_texture[level].rows/sample_texture.rows;
+    double local_shrink_ratio = (double)syn_textures[level].rows/sample_texture.rows;
     //TODO: check Uncommented CODE
     Mat re_texture = sample_texture.clone();
-    if ( syn_coor[level].rows < sample_texture.rows ) {
-        resize(sample_texture, re_texture, syn_texture[level].size());
+    if ( syn_coords[level].rows < sample_texture.rows ) {
+        resize(sample_texture, re_texture, syn_textures[level].size());
     }
-    dynamicArray2D<Point> temp_coor(syn_coor[level].rows, syn_coor[level].cols);
-    for (int i = 0; i < syn_texture[level].rows; i ++) {
-        for (int j = 0; j < syn_texture[level].cols; j ++) {
+    dynamicArray2D<Point> temp_coor(syn_coords[level].rows, syn_coords[level].cols);
+    for (int i = 0; i < syn_textures[level].rows; i ++) {
+        for (int j = 0; j < syn_textures[level].cols; j ++) {
             double min_cost = INFINITY;
             Point min_loc(0);
             for (int m = -COHERENCE_SEARCH_W; m <= COHERENCE_SEARCH_W; m ++) {
@@ -177,12 +177,12 @@ void ParallelControllableTextureSynthesis::correction(int level) {
                     for (int p = -PATCH_WIDTH; p <= PATCH_WIDTH; p ++) {
                         for (int q = -PATCH_WIDTH; q <= PATCH_WIDTH; q ++) {
 
-                            if ( (syn_coor[level].at(i, j).y + m + p) >= 0 && (syn_coor[level].at(i, j).y + m + p) < syn_texture[level].rows
-                                && (syn_coor[level].at(i, j).x + n + q) >= 0 && (syn_coor[level].at(i, j).x + n + q) < syn_texture[level].cols
-                                && (i + p) >= 0 && (i + p) < syn_texture[level].rows
-                                && (j + q) >= 0 && (j + q) < syn_texture[level].cols ) {
+                            if ( (syn_coords[level].at(i, j).y + m + p) >= 0 && (syn_coords[level].at(i, j).y + m + p) < syn_textures[level].rows
+                                && (syn_coords[level].at(i, j).x + n + q) >= 0 && (syn_coords[level].at(i, j).x + n + q) < syn_textures[level].cols
+                                && (i + p) >= 0 && (i + p) < syn_textures[level].rows
+                                && (j + q) >= 0 && (j + q) < syn_textures[level].cols ) {
 
-                                local_cost += Vec3bDiff(syn_texture[level].at<Vec3b>(i + p, j + q), re_texture.at<Vec3b>(syn_coor[level].at(i, j).y + m + p, syn_coor[level].at(i, j).x + n + q));
+                                local_cost += Vec3bDiff(syn_textures[level].at<Vec3b>(i + p, j + q), re_texture.at<Vec3b>(syn_coords[level].at(i, j).y + m + p, syn_coords[level].at(i, j).x + n + q));
                                 valid_count ++;
                             }
                         }
@@ -190,14 +190,14 @@ void ParallelControllableTextureSynthesis::correction(int level) {
                     local_cost /= valid_count;
                     if ( local_cost < min_cost ) {
                         min_cost = local_cost;
-                        min_loc = Point(syn_coor[level].at(i, j).x + n, syn_coor[level].at(i, j).y + m);
+                        min_loc = Point(syn_coords[level].at(i, j).x + n, syn_coords[level].at(i, j).y + m);
                     }
                 }
             }
             temp_coor.at(i, j) = min_loc;
         }
     }
-    syn_coor[level] = temp_coor;
+    syn_coords[level] = temp_coor;
 }
 
 
@@ -207,8 +207,8 @@ void ParallelControllableTextureSynthesis::coordinateMapping(int level) {
     Mat re_texture = sample_texture.clone();
     double i_scale = 1;
     double j_scale = 1;
-    if ( syn_coor[level].rows < sample_texture.rows ) {
-        cv::resize(sample_texture, re_texture, syn_texture[level].size());
+    if ( syn_coords[level].rows < sample_texture.rows ) {
+        cv::resize(sample_texture, re_texture, syn_textures[level].size());
 
         //i_scale = syn_texture[level].size().height / double(sample_texture.rows);
         //j_scale = syn_texture[level].size().width / double(sample_texture.cols);
@@ -228,20 +228,20 @@ void ParallelControllableTextureSynthesis::coordinateMapping(int level) {
         }
     }*/
     
-    for (int i = 0; i < syn_texture[level].rows; i ++) {
-        for (int j = 0; j < syn_texture[level].cols; j ++) {
+    for (int i = 0; i < syn_textures[level].rows; i ++) {
+        for (int j = 0; j < syn_textures[level].cols; j ++) {
             
-            Point &pt = syn_coor[level].at(i, j);
+            Point &pt = syn_coords[level].at(i, j);
             pt.x *= i_scale;
             pt.y *= j_scale;
 
             if (pt.x < 0 || pt.x >= re_texture.rows ||
                 pt.y < 0 || pt.y >= re_texture.cols){
-              syn_texture[level].at<Vec3b>(i, j) = Vec3b(255, 0, 0);
+              syn_textures[level].at<Vec3b>(i, j) = Vec3b(255, 0, 0);
               cerr << "Error: " << pt << " i_scale: " << i_scale << endl;
               continue;
             }
-            syn_texture[level].at<Vec3b>(i, j) = re_texture.at<Vec3b>(pt);
+            syn_textures[level].at<Vec3b>(i, j) = re_texture.at<Vec3b>(pt);
             
         }
     }
