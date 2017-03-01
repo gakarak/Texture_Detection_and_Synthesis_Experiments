@@ -32,24 +32,24 @@ Mat ParallelControllableTextureSynthesis::synthesis(const string &texture_file, 
 
     initialization(magnify_ratio);
 
-    for (int i = 1; i <= PYRAMID_LEVEL; i ++) {
+    for (int level = 1; level <= PYRAMID_LEVEL; level ++) {
 
-        upsample(i);
-        jitter(i);
-        coordinateMapping(i);
+        upsample(level);
+        jitter(level);
+        coordinateMapping(level);
 //        showMat(syn_texture[i]);
 
-        if(i>2) {
+        if(level>2) {
             for(int kk=0; kk<3; kk++) {
-                correction(i);
+                correction(level);
 //                coordinateMapping(i);
             }
         }
-        coordinateMapping(i);
+        coordinateMapping(level);
         std::stringstream ss;
-        ss << "" << i << "_LEVEL";
-        if (i>2) {
-            showMat(syn_texture[i], ss.str());
+        ss << "" << level << "_LEVEL";
+        if (level>2) {
+            showMat(syn_texture[level], ss.str());
         }
 //        std::cout << ""
     }
