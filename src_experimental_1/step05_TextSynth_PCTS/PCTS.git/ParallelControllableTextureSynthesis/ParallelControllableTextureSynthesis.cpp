@@ -106,7 +106,7 @@ void ParallelControllableTextureSynthesis::upsample(int level) {
 //            syn_coor[level].at(i*2    , j*2    ) = syn_coor[level - 1].at(i, j)*2;
 //            syn_coor[level].at(i*2 + 1, j*2    ) = syn_coor[level - 1].at(i, j)*2 + Point(1, 0);
 //            syn_coor[level].at(i*2    , j*2 + 1) = syn_coor[level - 1].at(i, j)*2 + Point(0, 1);
-//            syn_coor[level].at(i*2 + 1, j*2 + 1) = syn_coor[level - 1].at(i, j)*2 + Point(0, 0);
+//            syn_coor[level].at(i*2 + 1, j*2 + 1) = syn_coor[level - 1].at(i, j)*2 + Point(1, 1);
 //        }
 //    }
 
@@ -236,6 +236,7 @@ void ParallelControllableTextureSynthesis::coordinateMapping(int level) {
                 pt.y < 0 || pt.y >= re_texture.cols){
               syn_texture[level].at<Vec3b>(i, j) = Vec3b(255, 0, 0);
               cerr << "Error: " << pt << " i_scale: " << i_scale << endl;
+              continue;
             }
             syn_texture[level].at<Vec3b>(i, j) = re_texture.at<Vec3b>(pt);
             
