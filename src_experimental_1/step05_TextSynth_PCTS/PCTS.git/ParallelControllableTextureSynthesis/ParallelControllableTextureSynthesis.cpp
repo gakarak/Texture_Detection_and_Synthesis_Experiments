@@ -232,6 +232,8 @@ void ParallelControllableTextureSynthesis::correction(int level) {
     }
     auto &cur_lvl_tex = syn_textures[level];
     dynamicArray2D<Point> temp_coor(syn_coords[level].rows, syn_coords[level].cols);
+    #pragma omp parallel
+    #pragma omp for
     for (int i = 0; i < cur_lvl_tex.rows; i ++) {
         for (int j = 0; j < cur_lvl_tex.cols; j ++) {
           Point patch_tl( max(j - PATCH_WIDTH, 0),
