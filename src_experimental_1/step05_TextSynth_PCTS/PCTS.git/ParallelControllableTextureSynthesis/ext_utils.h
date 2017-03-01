@@ -57,6 +57,14 @@ public:
       return at(pt.y, pt.x);
     }
 
+    const T& at(int row, int column) const{
+        if (row < 0 || row >= rows
+            || column < 0 || column >= cols){
+          return data.at(-1*(row * cols + column));
+        }
+        return data[row * cols + column];
+    }
+
     T& at(int row, int column) {
 //        return this->operator () (row, column);
         if (row < 0 || row >= rows
