@@ -89,7 +89,7 @@ void ParallelControllableTextureSynthesis::initialization(double magnify_ratio) 
     int zero_level = 0;
     for (int i = 0; i < syn_coords[zero_level].rows; i++) {
         for (int j = 0; j < syn_coords[zero_level].cols; j++) {
-            syn_coords[zero_level].at(i,j) = cv::Point(0, 0);
+            syn_coords[zero_level].at(i,j) = cv::Point(i, j);
         }
     }
     
@@ -97,29 +97,43 @@ void ParallelControllableTextureSynthesis::initialization(double magnify_ratio) 
         cout<<syn_coords[i].rows<<", "<<syn_textures[i].rows<< endl;
     }
     
-    
 }
 
 
 void ParallelControllableTextureSynthesis::upsample(int level) {
-    
+    static const array<Point, 4> shifts = {Point(0, 0), Point(1, 0),
+                                            Point(0, 1), Point(1, 1)};
+    auto &prev_lvl = syn_coords[level - 1];
+    auto &cur_lvl = syn_coords[level];
+
     //TODO: FUCK2-1 - previous version of code
 //    for (int i = 0; i < syn_coor[level - 1].rows; i ++) {
 //        for (int j = 0; j < syn_coor[level - 1].cols; j ++) {
-//            syn_coor[level].at(i*2    , j*2    ) = syn_coor[level - 1].at(i, j)*2;
-//            syn_coor[level].at(i*2 + 1, j*2    ) = syn_coor[level - 1].at(i, j)*2 + Point(1, 0);
-//            syn_coor[level].at(i*2    , j*2 + 1) = syn_coor[level - 1].at(i, j)*2 + Point(0, 1);
-//            syn_coor[level].at(i*2 + 1, j*2 + 1) = syn_coor[level - 1].at(i, j)*2 + Point(1, 1);
+//              syn_coor[level].at(i*2    , j*2    ) = syn_coor[level - 1].at(i, j)*2;
+//              syn_coor[level].at(i*2 + 1, j*2    ) = syn_coor[level - 1].at(i, j)*2 + Point(1, 0);
+//              syn_coor[level].at(i*2    , j*2 + 1) = syn_coor[level - 1].at(i, j)*2 + Point(0, 1);
+//              syn_coor[level].at(i*2 + 1, j*2 + 1) = syn_coor[level - 1].at(i, j)*2 + Point(1, 1);
 //        }
 //    }
 
     //TODO: FUCK2-2 - previous version of code modified
-    for (int i = 0; i < syn_coords[level].rows; i ++) {
-        for (int j = 0; j < syn_coords[level].cols; j ++) {
-            cv::Point texture1 = cv::Point(syn_coords[level - 1].at(i/2, j/2));
-            cv::Point texture2 = texture1*2 + cv::Point(j%2, i%2);
-            coordinateTrim(texture2);
-            syn_coords[level].at(i, j) = texture2;
+//    for (int i = 0; i < syn_coords[level].rows; i ++) {
+//        for (int j = 0; j < syn_coords[level].cols; j ++) {
+//            cv::Point texture1 = cv::Point(syn_coords[level - 1].at(i/2, j/2));
+//            cv::Point texture2 = texture1*2 + cv::Point(j%2, i%2);
+//            coordinateTrim(texture2);
+//            syn_coords[level].at(i, j) = texture2;
+//        }
+//    }
+
+    //TODO: FUCK2-2 - modified first version
+    for (int i = 0; i < prev_lvl.rows; i ++) {
+        for (int j = 0; j < prev_lvl.cols; j ++) {
+          Point pt(i, j);
+          for (const auto &shift: shifts){
+            cur_lvl.at(2*pt + shift) = prev_lvl.at(i, j)*2 + shift;
+            coordinateTrim(cur_lvl.at(2*pt + shift));
+          }
         }
     }
 
@@ -250,7 +264,7 @@ void ParallelControllableTextureSynthesis::coordinateMapping(int level) {
 
 
 void ParallelControllableTextureSynthesis::coordinateTrim(Point &coor) {
-    
+    // I think there is should be module by current size of level texture
     coor = Point(coor.x % sample_texture.rows, coor.y % sample_texture.cols);
     /*if (coor.x < 0){
       coor.x = sample_texture.rows + coor.x;
