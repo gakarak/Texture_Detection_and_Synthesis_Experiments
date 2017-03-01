@@ -53,6 +53,9 @@ private:
     
     // Cut off the coordinates outside of texture boundary
     void coordinateTrim (cv::Point& coor);
+
+    // transforms coords to mat
+    cv::Mat coordsToMat(const dynamicArray2D<cv::Point> &coords);
     
     // Construct similar set of given input sample texture
     //void similarSetConstruction ();

@@ -68,11 +68,11 @@ Mat ParallelControllableTextureSynthesis::synthesis(const string &texture_file, 
         }
 
         if(level>2) {
-            for(int kk=0; kk<2; kk++) {
+            for(int kk=0; kk<5; kk++) {
                 auto start = high_resolution_clock::now();
 
+                //#pragma omp parallel
                 correction(level);
-
                 auto finish = high_resolution_clock::now();
 
                 cout << "Correction: "
@@ -84,6 +84,7 @@ Mat ParallelControllableTextureSynthesis::synthesis(const string &texture_file, 
         std::stringstream ss;
         ss << "" << level << "_LEVEL";
         //if (level>2) {
+        showMat(coordsToMat(syn_coords[level]), ss.str() + " coords", false);
         showMat(syn_textures[level], ss.str());
         //}
     }
@@ -242,7 +243,7 @@ void ParallelControllableTextureSynthesis::correction(int level) {
                           min(i + PATCH_WIDTH, cur_lvl_tex.rows) );
           Mat tex_patch = cur_lvl_tex(Rect(patch_tl, patch_br));
 
-          cout << re_texture.size() << "\n" << tex_patch.size() << endl;
+          //cout << re_texture.size() << "\n" << tex_patch.size() << endl;
 
           Mat result;
           cv::matchTemplate(re_texture, tex_patch, result, cv::TM_SQDIFF);
@@ -325,6 +326,21 @@ void ParallelControllableTextureSynthesis::coordinateMapping(int level) {
 void ParallelControllableTextureSynthesis::coordinateTrim(Point &coor) {
     coor = Point(coor.x % sample_texture.cols,
                  coor.y % sample_texture.rows);
+}
+
+Mat ParallelControllableTextureSynthesis::coordsToMat(const dynamicArray2D<Point> &coords)
+{
+    Mat result(coords.rows, coords.cols, CV_8UC3);
+
+    for (int i = 0; i < result.rows; i++){
+        for (int j = 0; j < result.cols; j++){
+            const auto &tex_pt = coords.at(i, j);
+            result.at<Vec3b>(i, j) = Vec3b(0, tex_pt.x * 255.0 / coords.cols,
+                                              tex_pt.y * 255.0 / coords.rows);
+        }
+    }
+
+    return result;
 }
 
 
