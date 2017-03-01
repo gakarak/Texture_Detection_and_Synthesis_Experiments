@@ -37,7 +37,6 @@ Mat ParallelControllableTextureSynthesis::synthesis(const string &texture_file, 
         upsample(level);
         //jitter(level);
         coordinateMapping(level);
-        showMat(syn_textures[level]);
 
         if(level>2) {
             for(int kk=0; kk<3; kk++) {
@@ -47,9 +46,9 @@ Mat ParallelControllableTextureSynthesis::synthesis(const string &texture_file, 
 //        coordinateMapping(level);
         std::stringstream ss;
         ss << "" << level << "_LEVEL";
-        if (level>2) {
-            showMat(syn_textures[level], ss.str());
-        }
+        //if (level>2) {
+        showMat(syn_textures[level], ss.str());
+        //}
     }
 //    showMat(synthesized_texture);
 
@@ -89,7 +88,7 @@ void ParallelControllableTextureSynthesis::initialization(double magnify_ratio) 
     int zero_level = 0;
     for (int i = 0; i < syn_coords[zero_level].rows; i++) {
         for (int j = 0; j < syn_coords[zero_level].cols; j++) {
-            syn_coords[zero_level].at(i,j) = cv::Point(i, j);
+            syn_coords[zero_level].at(i,j) = cv::Point(j, i);
         }
     }
     
@@ -129,13 +128,20 @@ void ParallelControllableTextureSynthesis::upsample(int level) {
     //TODO: FUCK2-2 - modified first version
     for (int i = 0; i < prev_lvl.rows; i ++) {
         for (int j = 0; j < prev_lvl.cols; j ++) {
-          Point pt(i, j);
+          Point pt(j, i);
           for (const auto &shift: shifts){
-            cur_lvl.at(2*pt + shift) = prev_lvl.at(i, j)*2 + shift;
+            cur_lvl.at(2*pt + shift) = prev_lvl.at(pt)*2 + shift;
             coordinateTrim(cur_lvl.at(2*pt + shift));
           }
         }
     }
+
+    /*for (int i = 0; i < cur_lvl.rows; i++){
+      for (int j = 0; j < cur_lvl.cols; j++){
+        cout << cur_lvl.at(i, j) << ' ';
+      }
+      cout << endl;
+    }*/
 
 
     //TODO: FUCK2 unimplemented forEach_withCorr()
@@ -219,16 +225,10 @@ void ParallelControllableTextureSynthesis::coordinateMapping(int level) {
     
     
     Mat re_texture = sample_texture.clone();
-    double i_scale = 1;
-    double j_scale = 1;
     if ( syn_coords[level].rows < sample_texture.rows ) {
         cv::resize(sample_texture, re_texture, syn_textures[level].size());
-
-        //i_scale = syn_texture[level].size().height / double(sample_texture.rows);
-        //j_scale = syn_texture[level].size().width / double(sample_texture.cols);
-        /*cv::imshow("resize", re_texture);
-        cv::waitKey(0);*/
     }
+    cv::imshow("resize", re_texture);
 
     /*for (int l = 0; l <= PYRAMID_LEVEL; l++){
       auto &pyr_lev = syn_coor[l];
@@ -246,13 +246,11 @@ void ParallelControllableTextureSynthesis::coordinateMapping(int level) {
         for (int j = 0; j < syn_textures[level].cols; j ++) {
             
             Point &pt = syn_coords[level].at(i, j);
-            pt.x *= i_scale;
-            pt.y *= j_scale;
 
             if (pt.x < 0 || pt.x >= re_texture.rows ||
                 pt.y < 0 || pt.y >= re_texture.cols){
               syn_textures[level].at<Vec3b>(i, j) = Vec3b(255, 0, 0);
-              cerr << "Error: " << pt << " i_scale: " << i_scale << endl;
+              cerr << "Error: " << pt << endl;
               continue;
             }
             syn_textures[level].at<Vec3b>(i, j) = re_texture.at<Vec3b>(pt);
