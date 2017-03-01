@@ -49,6 +49,14 @@ public:
 //        }
 //        return data[row * cols + column];
 //    }
+    const T& at(cv::Point pt) const{
+      return at(pt.y, pt.x);
+    }
+
+    T& at(cv::Point pt){
+      return at(pt.y, pt.x);
+    }
+
     T& at(int row, int column) {
 //        return this->operator () (row, column);
         if (row < 0 || row >= rows
