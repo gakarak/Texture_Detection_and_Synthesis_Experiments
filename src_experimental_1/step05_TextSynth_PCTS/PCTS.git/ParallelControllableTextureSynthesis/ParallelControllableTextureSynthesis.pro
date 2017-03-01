@@ -58,6 +58,7 @@ win32{
             -lopencv_xphoto320d
     }
     else {
+        INCLUDEPATH += C:\Local\Programming\CPP_Libraries\OpenCV\build_x64_12\install\x64\vc12\include
         LIBS += -LC:\Local\Programming\CPP_Libraries\OpenCV\build_x64_12\install\x64\vc12\lib \
             -lopencv_aruco320 \
             -lopencv_bgsegm320 \
