@@ -35,16 +35,16 @@ Mat ParallelControllableTextureSynthesis::synthesis(const string &texture_file, 
     for (int level = 1; level <= PYRAMID_LEVEL; level ++) {
 
         upsample(level);
-        jitter(level);
+        //jitter(level);
         coordinateMapping(level);
-//        showMat(syn_texture[i]);
+        showMat(syn_textures[level]);
 
         if(level>2) {
             for(int kk=0; kk<3; kk++) {
-                correction(level);
+                //correction(level);
             }
         }
-        coordinateMapping(level);
+//        coordinateMapping(level);
         std::stringstream ss;
         ss << "" << level << "_LEVEL";
         if (level>2) {
@@ -265,7 +265,7 @@ void ParallelControllableTextureSynthesis::coordinateMapping(int level) {
 
 void ParallelControllableTextureSynthesis::coordinateTrim(Point &coor) {
     // I think there is should be module by current size of level texture
-    coor = Point(coor.x % sample_texture.rows, coor.y % sample_texture.cols);
+    coor = Point(coor.x % sample_texture.cols, coor.y % sample_texture.rows);
     /*if (coor.x < 0){
       coor.x = sample_texture.rows + coor.x;
     }
