@@ -42,7 +42,6 @@ Mat ParallelControllableTextureSynthesis::synthesis(const string &texture_file, 
         if(level>2) {
             for(int kk=0; kk<3; kk++) {
                 correction(level);
-//                coordinateMapping(i);
             }
         }
         coordinateMapping(level);
@@ -51,7 +50,6 @@ Mat ParallelControllableTextureSynthesis::synthesis(const string &texture_file, 
         if (level>2) {
             showMat(syn_texture[level], ss.str());
         }
-//        std::cout << ""
     }
 //    showMat(synthesized_texture);
 
@@ -62,15 +60,20 @@ Mat ParallelControllableTextureSynthesis::synthesis(const string &texture_file, 
 
 void ParallelControllableTextureSynthesis::initialization(double magnify_ratio) {
     
-    cv::buildPyramid(Mat(sample_texture.rows*magnify_ratio, sample_texture.cols*magnify_ratio, CV_8UC3), syn_texture, PYRAMID_LEVEL);
+    //just creates array of black textures with appropriate sizes 512,256,128...
+    cv::buildPyramid(Mat(sample_texture.rows*magnify_ratio,
+                         sample_texture.cols*magnify_ratio, CV_8UC3),
+                     syn_texture, PYRAMID_LEVEL);
     
     std::reverse(syn_texture.begin(), syn_texture.end());
     
+    //preparing for eache level appropriate arrays with coordinates (S).
     for_each(syn_texture.begin(), syn_texture.end(), [&](Mat texture){
         
-        dynamicArray2D<Point> local_coor (texture.rows, texture.cols);
-        syn_coor.push_back(local_coor);
-//        showMat(texture);
+        //dynamicArray2D<Point> local_coor (texture.rows, texture.cols);
+        //syn_coor.push_back(local_coor);
+        syn_coor.emplace_back(texture.rows, texture.cols); // faster
+        //showMat(texture);
         
     });
     
@@ -83,10 +86,10 @@ void ParallelControllableTextureSynthesis::initialization(double magnify_ratio) 
 //    });
 
 //TODO: FUCK1-1 check equality of code '::forEach_withCorr()' and code below...
-    int tmpLevel = 0;
-    for (int i = 0; i < syn_coor[tmpLevel].rows; i++) {
-        for (int j = 0; j < syn_coor[tmpLevel].cols; j++) {
-            this->syn_coor[tmpLevel].at(i,j) = cv::Point(0, 0);
+    int zero_level = 0;
+    for (int i = 0; i < syn_coor[zero_level].rows; i++) {
+        for (int j = 0; j < syn_coor[zero_level].cols; j++) {
+            syn_coor[zero_level].at(i,j) = cv::Point(0, 0);
         }
     }
     
