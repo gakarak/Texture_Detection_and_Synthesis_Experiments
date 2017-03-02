@@ -12,6 +12,7 @@
 #include <iostream>
 #include <fstream>
 #include <map>
+#include <random>
 //#include "RosaniTools.h"
 #include "ext_utils.h"
 
@@ -60,6 +61,8 @@ private:
     // Construct similar set of given input sample texture
     //void similarSetConstruction ();
     
+    std::mt19937 mersene_random;
+
     cv::Mat sample_texture;
     //cv::Mat synthesized_texture;
     std::vector<dynamicArray2D<cv::Point> > syn_coords;
@@ -74,6 +77,8 @@ private:
     static const int    PATCH_WIDTH         =   2;
     static const int    COHERENCE_SEARCH_W  =   5;
     static const int    SIMILAR_NEIGHBOR_N  =  10;
+
+    static const double RANDOM_STRENGTH;
     
     
     

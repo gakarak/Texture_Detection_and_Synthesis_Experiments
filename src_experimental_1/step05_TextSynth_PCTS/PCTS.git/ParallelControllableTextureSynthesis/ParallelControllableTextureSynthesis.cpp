@@ -19,9 +19,11 @@ using chrono::milliseconds;
 using chrono::duration_cast;
 using chrono::high_resolution_clock;
 
+const double ParallelControllableTextureSynthesis::RANDOM_STRENGTH = 1.;
+
 ParallelControllableTextureSynthesis::ParallelControllableTextureSynthesis () {
-    
-    srand(1234);
+
+    mersene_random.seed(123);
     
 }
 
@@ -204,12 +206,15 @@ void ParallelControllableTextureSynthesis::jitter (int level) {
 //    });
 
 //TODO: FUCK3-1 check equality of code '::forEach()' and code below...
+    uniform_real_distribution<double> uniform(-1, 1);
+    auto &rnd = mersene_random;
+
     auto &cur_lvl_coords = syn_coords[level];
     for (int i = 0; i < cur_lvl_coords.rows; i++) {
         for (int j = 0; j < cur_lvl_coords.cols; j++) {
             auto &tex_pt = cur_lvl_coords.at(i, j);
-            tex_pt += cv::Point(floor((rand()%3 - 1) + 0.5),
-                                floor((rand()%3 - 1) + 0.5))*JITTER_AMPLITUDE;
+            tex_pt += cv::Point(floor(uniform(rnd)*RANDOM_STRENGTH + 0.5),
+                                floor(uniform(rnd)*RANDOM_STRENGTH + 0.5))*JITTER_AMPLITUDE;
 
             //checking bounds, they should not exceed cur level size
             tex_pt.x = max(tex_pt.x, 0);
