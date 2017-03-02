@@ -69,26 +69,29 @@ Mat ParallelControllableTextureSynthesis::synthesis(const string &texture_file, 
                << "ms" << endl;
         }
 
+        std::stringstream ss;
+        ss << "" << level << "_LEVEL";
         if(level>2) {
-            for(int kk=0; kk<5; kk++) {
+            showMat(coordsToMat(syn_coords[level]), ss.str() + " coords", false);
+            showMat(syn_textures[level], ss.str(), false);
+            waitKey(50);
+            for(int kk=0; kk<4; kk++) {
                 auto start = high_resolution_clock::now();
-
-                //#pragma omp parallel
                 correction(level);
+                coordinateMapping(level);
                 auto finish = high_resolution_clock::now();
 
                 cout << "Correction: "
                      << duration_cast<milliseconds>(finish - start).count()
                      << "ms" << endl;
+
+                showMat(coordsToMat(syn_coords[level]), ss.str() + " coords", false);
+                showMat(syn_textures[level], ss.str(), false);
+                waitKey(50);
             }
         }
-//        coordinateMapping(level);
-        std::stringstream ss;
-        ss << "" << level << "_LEVEL";
-        //if (level>2) {
         showMat(coordsToMat(syn_coords[level]), ss.str() + " coords", false);
         showMat(syn_textures[level], ss.str());
-        //}
     }
 //    showMat(synthesized_texture);
 
