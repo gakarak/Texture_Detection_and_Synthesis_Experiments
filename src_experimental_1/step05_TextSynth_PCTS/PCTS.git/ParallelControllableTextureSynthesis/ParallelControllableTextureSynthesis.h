@@ -27,7 +27,7 @@ public:
     ParallelControllableTextureSynthesis();
     
     // Default destructor
-    ~ParallelControllableTextureSynthesis();
+    ~ParallelControllableTextureSynthesis() = default;
     
     // Begin synthesizing
     cv::Mat synthesis (const std::string& texture_file, double magnify_ratio);
@@ -72,11 +72,11 @@ private:
     std::string sample_texture_path;
     
     static const int    PYRAMID_LEVEL       =   6;
-    static const int    OUTSPACE_FACTOR     =   1;
+//    static const int    OUTSPACE_FACTOR     =   1;
     static const int    JITTER_AMPLITUDE    =   1;
-    static const int    PATCH_WIDTH         =   2;
-    static const int    COHERENCE_SEARCH_W  =   5;
-    static const int    SIMILAR_NEIGHBOR_N  =  10;
+    static const int    PATCH_WIDTH         =   5;
+//    static const int    COHERENCE_SEARCH_W  =   5;
+//    static const int    SIMILAR_NEIGHBOR_N  =  10;
 
     static const double RANDOM_STRENGTH;
     
