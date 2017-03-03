@@ -20,11 +20,11 @@ using chrono::milliseconds;
 using chrono::duration_cast;
 using chrono::high_resolution_clock;
 
-const double ParallelControllableTextureSynthesis::RANDOM_STRENGTH = 0.6;
+const double ParallelControllableTextureSynthesis::RANDOM_STRENGTH = 1.;
 
 ParallelControllableTextureSynthesis::ParallelControllableTextureSynthesis () {
 
-    mersene_random.seed(123);
+    //mersene_random.seed(123);
     
 }
 
@@ -48,7 +48,7 @@ Mat ParallelControllableTextureSynthesis::synthesis(const string &texture_file, 
                << duration_cast<milliseconds>(finish - start).count()
                << "ms" << endl;
         }
-        if (level < 3)
+        //if (level < 3)
         {
           auto start = high_resolution_clock::now();
           jitter(level);
@@ -152,17 +152,18 @@ void ParallelControllableTextureSynthesis::jitter (int level) {
     auto &rnd = mersene_random;
 
     auto &cur_lvl_coords = syn_coords[level];
-    for (int i = 0; i < cur_lvl_coords.rows; i++) {
-        for (int j = 0; j < cur_lvl_coords.cols; j++) {
+    //const int PATCH_WIDTH = 0;
+    for (int i = PATCH_WIDTH; i < cur_lvl_coords.rows - PATCH_WIDTH; i++) {
+        for (int j = PATCH_WIDTH; j < cur_lvl_coords.cols - PATCH_WIDTH; j++) {
             auto &tex_pt = cur_lvl_coords.at(i, j);
             tex_pt += cv::Point(floor(uniform(rnd)*RANDOM_STRENGTH + 0.5),
                                 floor(uniform(rnd)*RANDOM_STRENGTH + 0.5))*JITTER_AMPLITUDE;
 
             //checking bounds, they should not exceed cur level size
-            tex_pt.x = max(tex_pt.x, 0);
-            tex_pt.x = min(tex_pt.x, cur_lvl_coords.cols - 1);
-            tex_pt.y = max(tex_pt.y, 0);
-            tex_pt.y = min(tex_pt.y, cur_lvl_coords.rows - 1);
+            tex_pt.x = max(tex_pt.x, PATCH_WIDTH);
+            tex_pt.x = min(tex_pt.x, cur_lvl_coords.cols - PATCH_WIDTH - 1);
+            tex_pt.y = max(tex_pt.y, PATCH_WIDTH);
+            tex_pt.y = min(tex_pt.y, cur_lvl_coords.rows - PATCH_WIDTH - 1);
 
             //trim to sample, when cur level size > sample size
             coordinateTrim(tex_pt);
@@ -180,7 +181,7 @@ void ParallelControllableTextureSynthesis::correction(int level) {
         resize(sample_texture, re_texture, cur_lvl_tex.size());
     }
 
-    dynamicArray2D<Point> temp_coor(cur_lvl_coords.rows, cur_lvl_coords.cols);
+    dynamicArray2D<Point> temp_coor = cur_lvl_coords;
 
     #pragma omp parallel
     #pragma omp for
