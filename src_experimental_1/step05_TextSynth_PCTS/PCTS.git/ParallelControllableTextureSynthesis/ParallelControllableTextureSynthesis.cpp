@@ -20,7 +20,8 @@ using chrono::milliseconds;
 using chrono::duration_cast;
 using chrono::high_resolution_clock;
 
-const double ParallelControllableTextureSynthesis::RANDOM_STRENGTH = 1.;
+const double ParallelControllableTextureSynthesis::RANDOM_STRENGTH = 0.1;
+int ParallelControllableTextureSynthesis::PATCH_WIDTH = 2;
 
 ParallelControllableTextureSynthesis::ParallelControllableTextureSynthesis () {
 
@@ -48,7 +49,6 @@ Mat ParallelControllableTextureSynthesis::synthesis(const string &texture_file, 
                << duration_cast<milliseconds>(finish - start).count()
                << "ms" << endl;
         }
-        //if (level < 3)
         {
           auto start = high_resolution_clock::now();
           jitter(level);
@@ -72,6 +72,7 @@ Mat ParallelControllableTextureSynthesis::synthesis(const string &texture_file, 
             showMat(coordsToMat(syn_coords[level]), ss.str() + " coords", false);
             showMat(syn_textures[level], ss.str(), false);
             waitKey(50);
+            PATCH_WIDTH = 20;
             for(int kk=0; kk<4; kk++) {
                 auto start = high_resolution_clock::now();
                 correction(level);
@@ -85,6 +86,7 @@ Mat ParallelControllableTextureSynthesis::synthesis(const string &texture_file, 
                 showMat(coordsToMat(syn_coords[level]), ss.str() + " coords", false);
                 showMat(syn_textures[level], ss.str(), false);
                 waitKey(50);
+                PATCH_WIDTH = max(PATCH_WIDTH - 5, 2);
             }
         }
         showMat(coordsToMat(syn_coords[level]), ss.str() + " coords", false);
@@ -152,18 +154,17 @@ void ParallelControllableTextureSynthesis::jitter (int level) {
     auto &rnd = mersene_random;
 
     auto &cur_lvl_coords = syn_coords[level];
-    //const int PATCH_WIDTH = 0;
-    for (int i = PATCH_WIDTH; i < cur_lvl_coords.rows - PATCH_WIDTH; i++) {
-        for (int j = PATCH_WIDTH; j < cur_lvl_coords.cols - PATCH_WIDTH; j++) {
+    for (int i = 0; i < cur_lvl_coords.rows; i++) {
+        for (int j = 0; j < cur_lvl_coords.cols; j++) {
             auto &tex_pt = cur_lvl_coords.at(i, j);
             tex_pt += cv::Point(floor(uniform(rnd)*RANDOM_STRENGTH + 0.5),
                                 floor(uniform(rnd)*RANDOM_STRENGTH + 0.5))*JITTER_AMPLITUDE;
 
             //checking bounds, they should not exceed cur level size
-            tex_pt.x = max(tex_pt.x, PATCH_WIDTH);
-            tex_pt.x = min(tex_pt.x, cur_lvl_coords.cols - PATCH_WIDTH - 1);
-            tex_pt.y = max(tex_pt.y, PATCH_WIDTH);
-            tex_pt.y = min(tex_pt.y, cur_lvl_coords.rows - PATCH_WIDTH - 1);
+            tex_pt.x = max(tex_pt.x, 0);
+            tex_pt.x = min(tex_pt.x, cur_lvl_coords.cols - 1);
+            tex_pt.y = max(tex_pt.y, 0);
+            tex_pt.y = min(tex_pt.y, cur_lvl_coords.rows - 1);
 
             //trim to sample, when cur level size > sample size
             coordinateTrim(tex_pt);
@@ -183,10 +184,12 @@ void ParallelControllableTextureSynthesis::correction(int level) {
 
     dynamicArray2D<Point> temp_coor = cur_lvl_coords;
 
+    const int BORDER = PATCH_WIDTH;
+
     #pragma omp parallel
     #pragma omp for
-    for (int i = PATCH_WIDTH; i < cur_lvl_tex.rows - PATCH_WIDTH; i ++) {
-        for (int j = PATCH_WIDTH; j < cur_lvl_tex.cols - PATCH_WIDTH; j ++) {
+    for (int i = BORDER; i < cur_lvl_tex.rows - BORDER; i ++) {
+        for (int j = BORDER; j < cur_lvl_tex.cols - BORDER; j ++) {
             //taking patch
             Point patch_tl( max(j - PATCH_WIDTH, 0),
                             max(i - PATCH_WIDTH, 0) );
@@ -228,7 +231,7 @@ void ParallelControllableTextureSynthesis::coordinateMapping(int level) {
             if (pt.x < 0 || pt.x >= re_texture.rows ||
                 pt.y < 0 || pt.y >= re_texture.cols){
               cur_lvl_tex.at<Vec3b>(i, j) = Vec3b(255, 0, 0);
-              cerr << "Error: " << pt << endl;
+              cerr << "Error at (" << i << ", " << j << "): " << pt << endl;
               continue;
             }
 
