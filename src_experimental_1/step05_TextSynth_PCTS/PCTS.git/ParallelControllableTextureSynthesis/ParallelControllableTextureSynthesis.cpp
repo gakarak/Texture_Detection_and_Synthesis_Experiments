@@ -20,10 +20,13 @@ using chrono::milliseconds;
 using chrono::duration_cast;
 using chrono::high_resolution_clock;
 
-const double ParallelControllableTextureSynthesis::RANDOM_STRENGTH = 0.1;
-int ParallelControllableTextureSynthesis::PATCH_WIDTH = 2;
+using PCTS = ParallelControllableTextureSynthesis;
 
-ParallelControllableTextureSynthesis::ParallelControllableTextureSynthesis () {
+const double PCTS::RANDOM_STRENGTH = 0.1;
+int PCTS::CUR_PATCH_SIZE = PCTS::MAX_PATCH_SIZE;
+std::array<int, PCTS::CORRECTION_PASSES> PCTS::PATCH_SIZES;
+
+PCTS::ParallelControllableTextureSynthesis (){
 
     //mersene_random.seed(123);
     
@@ -72,8 +75,9 @@ Mat ParallelControllableTextureSynthesis::synthesis(const string &texture_file, 
             showMat(coordsToMat(syn_coords[level]), ss.str() + " coords", false);
             showMat(syn_textures[level], ss.str(), false);
             waitKey(50);
-            PATCH_WIDTH = 20;
-            for(int kk=0; kk<4; kk++) {
+            for(int pass_num = 0; pass_num < CORRECTION_PASSES; pass_num++) {
+                CUR_PATCH_SIZE = PATCH_SIZES[pass_num];
+
                 auto start = high_resolution_clock::now();
                 correction(level);
                 coordinateMapping(level);
@@ -81,12 +85,12 @@ Mat ParallelControllableTextureSynthesis::synthesis(const string &texture_file, 
 
                 cout << "Correction: "
                      << duration_cast<milliseconds>(finish - start).count()
-                     << "ms" << endl;
+                     << "ms, "
+                     << "Patch size: " << CUR_PATCH_SIZE << endl;
 
                 showMat(coordsToMat(syn_coords[level]), ss.str() + " coords", false);
                 showMat(syn_textures[level], ss.str(), false);
                 waitKey(50);
-                PATCH_WIDTH = max(PATCH_WIDTH - 5, 2);
             }
         }
         showMat(coordsToMat(syn_coords[level]), ss.str() + " coords", false);
@@ -121,6 +125,12 @@ void ParallelControllableTextureSynthesis::initialization(double magnify_ratio) 
             syn_coords[zero_level].at(i,j) = cv::Point(j, i);
         }
     }
+
+    // fill patch sizes for each correction pass
+    PATCH_SIZES[0] = MAX_PATCH_SIZE;
+    for (int i = 1; i < PATCH_SIZES.size(); i++){
+        PATCH_SIZES[i] = max(PATCH_SIZES[i-1] - DEC_PATCH_STEP, MIN_PATCH_SIZE);
+    }
     
     //out sizes
     for (int i = 0; i < syn_coords.size(); i ++) {
@@ -128,7 +138,6 @@ void ParallelControllableTextureSynthesis::initialization(double magnify_ratio) 
     }
     
 }
-
 
 void ParallelControllableTextureSynthesis::upsample(int level) {
     static const array<Point, 4> shifts = {Point(0, 0), Point(1, 0),
@@ -184,19 +193,17 @@ void ParallelControllableTextureSynthesis::correction(int level) {
 
     dynamicArray2D<Point> temp_coor = cur_lvl_coords;
 
-    const int BORDER = PATCH_WIDTH;
-
+    const int BORDER = CUR_PATCH_SIZE;
     #pragma omp parallel
     #pragma omp for
     for (int i = BORDER; i < cur_lvl_tex.rows - BORDER; i ++) {
         for (int j = BORDER; j < cur_lvl_tex.cols - BORDER; j ++) {
             //taking patch
-            Point patch_tl( max(j - PATCH_WIDTH, 0),
-                            max(i - PATCH_WIDTH, 0) );
-            Point patch_br( min(j + PATCH_WIDTH, cur_lvl_tex.cols),
-                            min(i + PATCH_WIDTH, cur_lvl_tex.rows) );
+            Point patch_tl( max(j - CUR_PATCH_SIZE, 0),
+                            max(i - CUR_PATCH_SIZE, 0) );
+            Point patch_br( min(j + CUR_PATCH_SIZE + 1, cur_lvl_tex.cols),
+                            min(i + CUR_PATCH_SIZE + 1, cur_lvl_tex.rows) );
             Mat tex_patch = cur_lvl_tex(Rect(patch_tl, patch_br));
-
 
             //find best fit
             Mat result;
@@ -206,9 +213,10 @@ void ParallelControllableTextureSynthesis::correction(int level) {
             cv::minMaxLoc(result, 0, 0, &min_loc);
 
             //save it
-            temp_coor.at(i, j) = min_loc + Point(PATCH_WIDTH, PATCH_WIDTH);
+            temp_coor.at(i, j) = min_loc + Point(CUR_PATCH_SIZE, CUR_PATCH_SIZE);
         }
     }
+
     cur_lvl_coords = temp_coor;
 }
 

@@ -13,6 +13,7 @@
 #include <fstream>
 #include <map>
 #include <random>
+#include <array>
 //#include "RosaniTools.h"
 #include "ext_utils.h"
 
@@ -74,12 +75,16 @@ private:
     static const int    PYRAMID_LEVEL       =   7;
 //    static const int    OUTSPACE_FACTOR     =   1;
     static const int    JITTER_AMPLITUDE    =   1;
-    static  int    PATCH_WIDTH;
+    static const int    CORRECTION_PASSES   =   4;
+    static const int    MAX_PATCH_SIZE      =   20;
+    static const int    DEC_PATCH_STEP      =   MAX_PATCH_SIZE / CORRECTION_PASSES;
+    static const int    MIN_PATCH_SIZE      =   2;
+    static       int    CUR_PATCH_SIZE;
+    static       std::array<int, CORRECTION_PASSES> PATCH_SIZES;
 //    static const int    COHERENCE_SEARCH_W  =   5;
 //    static const int    SIMILAR_NEIGHBOR_N  =  10;
-
-    static const double RANDOM_STRENGTH;
     
+    static const double RANDOM_STRENGTH;
     
     
     

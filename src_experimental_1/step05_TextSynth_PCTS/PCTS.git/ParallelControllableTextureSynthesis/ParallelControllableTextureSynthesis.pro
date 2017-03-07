@@ -113,5 +113,5 @@ SOURCES += main.cpp \
            ext_utils.cpp
 
 HEADERS += \
-    ParallelControllableTextureSynthesis.h \
-    ext_utils.h
+    ext_utils.h \
+    ParallelControllableTextureSynthesis.h
