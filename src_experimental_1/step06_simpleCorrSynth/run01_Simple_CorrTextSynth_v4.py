@@ -6,7 +6,7 @@ import os
 import glob
 import sys
 
-#import skimage.io as skio
+import skimage.io as skio
 
 import cv2
 import numpy as np
@@ -223,12 +223,17 @@ def getBestTextonBBox(img, vx, vy, mask, sizN=1, parMethod = cv2.TM_SQDIFF, bbox
 		#
 		texton = cropTexton(img, bbox, brdPx=parBorder, brdPrcnt=None)
 
+		if (texton.shape[0] < bbH or texton.shape[1] < bbW):
+			continue;
+
 		ptrnSize = parBorder+2
 		brdSizeExt = int(1.7*parBorder)
 		ptrnLef = texton[ptrnSize:-ptrnSize, :ptrnSize]
 		ptrnTop = texton[:ptrnSize, ptrnSize:-ptrnSize]
-		#print(texton.shape)
-		#print(ptrnLef.shape)
+
+		# plt.imshow(texton)
+		# plt.show()
+
 		ccMapH = cv2.matchTemplate(texton, ptrnLef, method=parMethod)
 		ccMapV = cv2.matchTemplate(texton, ptrnTop, method=parMethod)
 		if parMethod==cv2.TM_SQDIFF or parMethod==cv2.TM_SQDIFF_NORMED:
@@ -300,7 +305,7 @@ def cropTexton(img, texBBox, brdPrcnt=0.1, brdPx=None):
 
 ##########################################
 if __name__ == '__main__':
-	texture_class = 'strange'
+	texture_class = 'wild'
 	fidx = '../../data/data04_for_test1_results_v1/%s/cropped_and_results/idx.txt' % texture_class
 	# fidx = '/home/ar/github.com/Texture_Detection_and_Synthesis_Experiments.git/data/data04_for_test1_results_v1/txt02_pxy_M/cropped_and_results/idx.txt'
 	
@@ -317,17 +322,17 @@ if __name__ == '__main__':
 	paramSizTexton = 1
 	texton_from_big = True
 	for ii,pathImg in enumerate(lstPathImg):
-		if ii==5:
-		      continue
+		#if ii!=21:
+		#      continue
 		print ('[%d/%d] : %s' % (ii, numImg, pathImg))
 
 		##### READ INPUT
 		img_idx = lstIdx[ii]
-		img = np.array(cv2.imread(pathImg))
+		img = np.array(skio.imread(pathImg))
 		img_for_crop = img
 
 		if texton_from_big:
-			big_img = np.array(cv2.imread(os.path.join(wdir, '%s_big.jpg' % img_idx)))
+			big_img = np.array(skio.imread(os.path.join(wdir, '%s_big.jpg' % img_idx)))
 			img_for_crop = big_img
 
 		[v_x, v_y, mask] = readGrid(wdir, img_idx)
@@ -337,7 +342,7 @@ if __name__ == '__main__':
 		# mask[:, mask.shape[1] / 2] = False
 
 		### get bbox
-		eroded_mask = maskErosion(mask, percent_of_src = 0.8, min_square = 10)
+		eroded_mask = maskErosion(mask, percent_of_src = 0.8, min_square = 7)
 		if texton_from_big:
 			bbox_scale = big_img.shape[0] / img.shape[0]
 		bbox = getBestTextonBBox(img_for_crop, v_x, v_y, eroded_mask, 
@@ -420,6 +425,6 @@ if __name__ == '__main__':
 		#mng.window.showMaximized()
 
 		plt.savefig(os.path.join(wdir, '../../report/%s_%s_result.png' % (texture_class, img_idx)), format='png')
-		cv2.imwrite(os.path.join(wdir, '../../report/%s_%s_texture.png' % (texture_class, img_idx)), texton)
+		#skio.imwrite(os.path.join(wdir, '../../report/%s_%s_texture.png' % (texture_class, img_idx)), texton)
 		#plt.show()
 
