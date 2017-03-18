@@ -110,14 +110,14 @@ def generateTiledTextureV1(texton, dRightY, dBottomX, nr=5, nc=5):
 def generateTiledTextureV2(textonBRD, posXY_RT, posXY_LB, nr=5, nc=5, isDebug=False):
 	tsiz = textonBRD.shape[:2]
 	sizR, sizC = tsiz
-	drShiftTot = posRT[1] * (nc - 0)
-	dcShiftTot = posLB[0] * (nr - 0)
+	drShiftTot = posXY_RT[1] * (nc - 0)
+	dcShiftTot = posXY_LB[0] * (nr - 0)
 	drStep = np.abs(posXY_LB[1] * 1)
 	dcStep = np.abs(posXY_RT[0] * 1)
 	sizRT = drStep * (nr + 1) + abs(drShiftTot)
 	sizCT = dcStep * (nc + 1) + abs(dcShiftTot)
-	vRT = np.array((posRT[1],posRT[0]))
-	vLB = np.array((posLB[1],posLB[0]))
+	vRT = np.array((posXY_RT[1],posXY_RT[0]))
+	vLB = np.array((posXY_LB[1],posXY_LB[0]))
 	if textonBRD.ndim<3:
 		retTexture = np.zeros((sizRT, sizCT), dtype=textonBRD.dtype)
 	else:
