@@ -10,8 +10,10 @@ import matplotlib.pyplot as plt
 
 ##########################################
 
-def shortestPath(errors, is_vertical = True):
-
+def shortestPath(errors):
+  """
+  shortest path from top to bottom
+  """
   used = []
   length = np.zeros(errors.shape, dtype = errors.dtype)
   length[0] = errors[0]
@@ -57,7 +59,7 @@ def quilting(left_region, right_region, is_vertical = True):
 
   errors = np.linalg.norm(left_region - right_region, ord=2, axis=2)
   
-  path = shortestPath(errors, is_vertical)
+  path = shortestPath(errors)
 
   result = left_region.copy()
   for i in range(path.shape[0]):
