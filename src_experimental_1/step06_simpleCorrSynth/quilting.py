@@ -14,7 +14,6 @@ def shortestPath(errors):
   """
   shortest path from top to bottom
   """
-  used = []
   length = np.zeros(errors.shape, dtype = errors.dtype)
   length[0] = errors[0]
   pred_j = -np.ones(errors.shape, dtype = np.int)
@@ -30,11 +29,6 @@ def shortestPath(errors):
       length[i, j] = length[i-1, j] + np.min(errors[i-1, prev_pts])
       pred_j[i, j] = prev_pts[ np.argmin(errors[i-1, prev_pts]) ]
 
-  # with_path = quilled.copy()
-  # with_path[path[:,0], path[:, 1]] = with_path[path[:,0], path[:, 1]]*0.7 + 0.3*np.repeat([[255, 0, 0]], path.shape[0], axis=0)
-  # plt.imshow(with_path)
-  # plt.show()
-
   # reconstruct path
   cur_j = np.argmin(length[-1,:])
   path = [(length.shape[0] - 1, cur_j)]
@@ -44,9 +38,11 @@ def shortestPath(errors):
 
   return np.array(path, dtype=np.int)
 
-def quilting(left_region, right_region, is_vertical = True):
+def quilting(left_region, right_region, is_vertical = True, is_debug = False):
   """
   performs quilling on two equal-shape regions of image which intersects
+    left_region - is also top region for horizontal quilting
+    right_region - is also bottom region for horizontal quilting
     is_vertical - direction of quilling
   """
 
@@ -55,7 +51,7 @@ def quilting(left_region, right_region, is_vertical = True):
 
   if (not is_vertical):
     return quilting(left_region.transpose(1, 0, 2), 
-                    right_region.transpose(1, 0, 2)).transpose(1, 0, 2)
+                    right_region.transpose(1, 0, 2), is_debug = is_debug).transpose(1, 0, 2)
 
   errors = np.linalg.norm(left_region - right_region, ord=2, axis=2)
   
@@ -64,6 +60,10 @@ def quilting(left_region, right_region, is_vertical = True):
   result = left_region.copy()
   for i in range(path.shape[0]):
     result[path[i, 0], path[i, 1]:] = right_region[path[i, 0], path[i, 1]:]
+
+  # for debug
+  if (is_debug):
+    result[path[:,0], path[:, 1]] = result[path[:,0], path[:, 1]]*0.5 + 0.5*np.repeat([[255, 0, 0]], path.shape[0], axis=0)
 
   return result
 
